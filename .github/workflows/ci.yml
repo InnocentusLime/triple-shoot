@@ -1,0 +1,84 @@
+name: CI
+
+on: [push, pull_request]
+
+env:
+  RUSTFLAGS: "-D warnings"
+  RUST_BACKTRACE: "1"
+
+jobs:
+  ci-build-web:
+    runs-on: ubuntu-latest
+    container: rust:1.93.1-bookworm 
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/
+            ~/.cargo/git/
+            target/
+          key: ci-web-bookworm-1.93.1-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ci-web-bookworm-1.93.1-cargo-
+      - shell: bash
+        run: rustup target add wasm32-unknown-unknown
+      - name: Check WASM (dbg-only)
+        run: cargo build --target wasm32-unknown-unknown --locked --features lib-game/dbg
+      - name: Check Native (shipped)
+        run: cargo build --target wasm32-unknown-unknown --locked
+  ci-build-native:
+    runs-on: ubuntu-latest
+    container: rust:1.93.1-bookworm 
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/
+            ~/.cargo/git/
+            target/
+          key: ci-native-bookworm-1.93-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ci-native-bookworm-1.93-cargo-
+      - shell: bash
+        run: >
+          apt-get update &&
+          apt-get install -y --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+      - name: Check Native (dev-env)
+        run: cargo build --locked --features lib-game/dev-env
+      - name: Check Native (dbg-only)
+        run: cargo build --locked --features lib-game/dbg
+      - name: Check Native (shipped)
+        run: cargo build --locked
+  tests:
+    runs-on: ubuntu-latest
+    container: rust:1.93.1-bookworm 
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/
+            ~/.cargo/git/
+            target/
+          key: tests-bookworm-1.93-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: tests-bookworm-1.93-cargo-
+      - shell: bash
+        run: >
+          apt-get update &&
+          apt-get install -y --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+      - name: Run tests
+        run: cargo test --workspace --package "*" --features dev-env --locked
+  cargo-fmt:
+    runs-on: ubuntu-latest
+    container: rust:1.93.1-bookworm 
+    steps:
+      - uses: actions/checkout@v5
+      - shell: bash
+        run: rustup component add rustfmt
+      - run: cargo fmt --all -- --check

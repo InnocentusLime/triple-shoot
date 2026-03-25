@@ -1,0 +1,25 @@
+[package]
+name = "lib-game"
+version = "0.22.0"
+edition = "2024"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+image = { workspace = true }
+log = { workspace = true }
+anyhow = { workspace = true }
+hecs = { workspace = true }
+mimiq = { workspace = true }
+glam = { workspace = true }
+hashbrown = { workspace = true }
+lib-col = { path = "../lib-col" }
+lib-asset = { path = "../lib-asset" }
+egui = { version = "0.33", optional = true }
+
+[features]
+dbg = ["dep:egui", "mimiq/egui", "lib-col/dbg", "lib-asset/dbg"]
+dev-env = ["dbg", "lib-asset/dev-env"]
+
+[dev-dependencies]
+rand = "0.9.1"

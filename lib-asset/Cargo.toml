@@ -1,0 +1,21 @@
+[package]
+name = "lib-asset"
+version = "0.13.0"
+edition = "2024"
+
+[dependencies]
+image = { workspace = true }
+glam = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+hashbrown = { workspace = true, features = ["serde"] }
+mimiq = { workspace = true }
+lib-col = { path = "../lib-col" }
+hecs = { workspace = true }
+slab = "0.4"
+tracing = "0.1.44"
+
+[features]
+dbg = []
+dev-env = ["dbg"]

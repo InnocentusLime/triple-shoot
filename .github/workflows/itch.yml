@@ -1,0 +1,26 @@
+name: Itchio Releaser
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Build image
+        run: docker build -t quad-jam .
+      - name: Instantiate image
+        run: docker create --name quad-jam quad-jam
+      - name: Extract artifact
+        run: docker cp quad-jam:/usr/local/apache2/htdocs/ ./dist 
+      - name: Push HTML5 version to itch.io
+        uses: yeslayla/butler-publish-itchio-action@v1.1.0  
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_TOKEN }}
+          ITCH_GAME: ${{ vars.ITCH_GAME }}
+          ITCH_USER: innocentuslime
+          CHANNEL: html5
+          PACKAGE: ./dist
