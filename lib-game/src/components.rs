@@ -1,7 +1,7 @@
 pub use crate::collisions::components::*;
 pub use crate::render::components::*;
 
-use glam::*;
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
 pub struct ProjectileData {

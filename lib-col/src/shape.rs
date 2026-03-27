@@ -2,7 +2,7 @@
 //! * Projecting a shape onto an axis
 //! * Separating axis theorem
 
-use glam::{Affine2, Vec2, vec2};
+use mimiq::glam::{Affine2, Vec2, vec2};
 
 pub const MAX_AXIS_NORMALS: usize = 8;
 pub const SHAPE_TOI_EPSILON: f32 = f32::EPSILON * 100.0f32;
@@ -137,7 +137,7 @@ pub fn circle_points(radius: f32, tf: Affine2) -> [Vec2; 8] {
 
 #[cfg(test)]
 mod sanity_checks {
-    use glam::Vec2;
+    use mimiq::glam::Vec2;
 
     use super::{CIRCLE_NORMALS, CIRCLE_VERTICES};
 

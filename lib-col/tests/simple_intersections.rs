@@ -1,7 +1,7 @@
 mod common;
 
 use common::{FuzzableTestCase, TestCase, draw_shape, run_tests};
-use glam::{Affine2, Vec2, vec2};
+use mimiq::glam::{Affine2, Vec2, vec2};
 
 use lib_col::{Collider, CollisionSolver, Group, Shape};
 

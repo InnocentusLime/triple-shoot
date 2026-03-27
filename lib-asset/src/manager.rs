@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use crate::{FsResolver, PrefabFactory};
+use mimiq::image;
 use mimiq::{FileReady, FsServerHandle};
 
 use anyhow::Context;

@@ -2,6 +2,7 @@ use std::fmt;
 use std::sync::{LazyLock, Mutex};
 
 use egui::Window;
+use mimiq::egui;
 
 const DUMP_LINE_CAPACITY: usize = 255;
 const DUMP_CAPACITY: usize = 100;

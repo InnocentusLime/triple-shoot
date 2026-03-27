@@ -1,6 +1,7 @@
 use crate::DebugCommand;
 
 use egui::{Modal, TextEdit};
+use mimiq::egui;
 
 const MAX_CMD_LEN: usize = 100;
 const CMD_WIDTH: f32 = 500.0;
