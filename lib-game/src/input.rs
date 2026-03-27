@@ -17,10 +17,6 @@ impl Input {
         Input { buttons: InputTracker::new() }
     }
 
-    pub fn reset(&mut self) {
-        self.buttons.reset();
-    }
-
     pub fn update(&mut self) {
         self.buttons.update();
     }

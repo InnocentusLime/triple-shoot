@@ -130,7 +130,6 @@ impl mimiq::EventHandler<AppInit> for App {
         let update = !self.debug.game_freeze_active();
 
         if !update {
-            self.input.reset();
             return;
         }
 
@@ -149,14 +148,7 @@ impl mimiq::EventHandler<AppInit> for App {
     }
 
     fn window_event(&mut self, event: WindowEvent, _window: &Window) {
-        #[cfg(not(feature = "dbg"))]
-        let allow_input = true;
-        #[cfg(feature = "dbg")]
-        let allow_input = !self.debug.game_freeze_active();
-
-        if allow_input {
-            self.input.handle_event(&event);
-        }
+        self.input.handle_event(&event);
 
         if event == WindowEvent::RedrawRequested {
             self.render.render(&mut self.resources);
