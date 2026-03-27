@@ -164,7 +164,7 @@ impl mimiq::EventHandler<AppInit> for App {
     }
 
     #[cfg(feature = "dbg")]
-    fn egui(&mut self, egui_ctx: &egui::Context) {
+    fn egui(&mut self, egui_ctx: &mimiq::egui::Context) {
         self.dump_common_info();
         self.debug_ui(egui_ctx);
         self.debug.new_update();
@@ -241,7 +241,12 @@ impl Resources {
         self.prefabs.insert(src, prefab);
     }
 
-    fn init_texture(&mut self, _fs_resolver: &FsResolver, image: image::DynamicImage, src: &Path) {
+    fn init_texture(
+        &mut self,
+        _fs_resolver: &FsResolver,
+        image: mimiq::image::DynamicImage,
+        src: &Path,
+    ) {
         let tex = self.gl_ctx.new_texture(
             image,
             mimiq::Texture2DParams {

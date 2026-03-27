@@ -1,4 +1,4 @@
-use glam::Vec2;
+use mimiq::glam::Vec2;
 
 use crate::SHAPE_TOI_EPSILON;
 

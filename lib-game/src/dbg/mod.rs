@@ -8,7 +8,7 @@ use crate::{App, DebugCommand};
 pub use cmd::*;
 pub use screendump::*;
 
-use egui::Context;
+use mimiq::egui::Context;
 
 pub(crate) struct DebugStuff {
     pub cmd_center: CommandCenter,

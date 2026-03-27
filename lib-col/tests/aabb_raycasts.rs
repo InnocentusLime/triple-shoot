@@ -1,5 +1,5 @@
-use glam::{Affine2, Vec2, vec2};
 use lib_col::Aabb;
+use mimiq::glam::{Affine2, Vec2, vec2};
 
 use crate::common::{TestCase, draw_aabb, draw_vector, run_tests_no_fuzz};
 

@@ -1,7 +1,7 @@
 mod common;
 
-use glam::vec2;
 use lib_col::Aabb;
+use mimiq::glam::vec2;
 
 use crate::common::{TestCase, draw_aabb, run_tests_no_fuzz};
 

@@ -3,7 +3,7 @@
 //! This module provides functions to quickly convert a transform from such
 //! system into the crate's one.
 
-use glam::{Affine2, Vec2, vec2};
+use mimiq::glam::{Affine2, Vec2, vec2};
 
 pub fn topleft_corner_vector_to_crate(v: Vec2) -> Vec2 {
     vec2(v.x, -v.y)

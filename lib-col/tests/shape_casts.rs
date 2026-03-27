@@ -1,8 +1,8 @@
 mod common;
 
 use common::{FuzzableTestCase, TestCase, draw_shape, draw_vector, run_tests};
-use glam::{Affine2, Vec2, vec2};
 use lib_col::{Collider, CollisionSolver, Group, SHAPE_TOI_EPSILON, Shape, conv};
+use mimiq::glam::{Affine2, Vec2, vec2};
 
 use crate::common::entity;
 

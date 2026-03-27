@@ -1,8 +1,8 @@
 mod common;
 
 use common::{TestCase, draw_shape, run_tests_no_fuzz};
-use glam::{Affine2, Mat2, vec2};
 use lib_col::{Collider, CollisionSolver, Group, Shape};
+use mimiq::glam::{Affine2, Mat2, vec2};
 use std::collections::HashSet;
 
 use crate::common::{entity, query_overlaps_set};

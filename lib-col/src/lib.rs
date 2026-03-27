@@ -11,8 +11,8 @@ pub mod conv;
 mod group;
 mod shape;
 
-use glam::{Affine2, Vec2, vec2};
 use hecs::Entity;
+use mimiq::glam::{Affine2, Vec2, vec2};
 use std::cell::Cell;
 
 pub use aabb::*;

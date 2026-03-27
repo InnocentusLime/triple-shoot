@@ -9,16 +9,18 @@ RUN <<EOF
         libwayland-dev \
         libxkbcommon-dev
     rustup target add wasm32-unknown-unknown
+    cargo install -f wasm-bindgen-cli --version 0.2.114
 EOF
 ADD . /project/
-RUN <<EOF
-    cd /project &&\
-    cargo build --target wasm32-unknown-unknown --features dbg --profile wasm-release --locked
-EOF
-# Put all files
+# Put all statis files
 COPY /assets/ /dist/assets
 COPY /static/* /dist
-RUN cp /project/target/wasm32-unknown-unknown/wasm-release/quad-jam-2024.wasm /dist/game.wasm
+# Put built files
+RUN <<EOF
+    cd /project &&\
+    cargo build --target wasm32-unknown-unknown --features dbg --profile wasm-release --locked &&\
+    wasm-bindgen --target web --out-dir /dist ./target/wasm32-unknown-unknown/wasm-release/trishoot.wasm
+EOF
 
 FROM httpd:trixie 
 COPY --from=build /dist /usr/local/apache2/htdocs/ 

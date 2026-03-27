@@ -908,10 +908,8 @@ name = "lib-asset"
 version = "0.13.0"
 dependencies = [
  "anyhow",
- "glam",
  "hashbrown 0.14.5",
  "hecs",
- "image",
  "lib-col",
  "mimiq",
  "serde",
@@ -924,8 +922,8 @@ dependencies = [
 name = "lib-col"
 version = "0.4.6"
 dependencies = [
- "glam",
  "hecs",
+ "mimiq",
  "rand",
  "serde",
  "svg",
@@ -936,11 +934,8 @@ name = "lib-game"
 version = "0.22.0"
 dependencies = [
  "anyhow",
- "egui",
- "glam",
  "hashbrown 0.14.5",
  "hecs",
- "image",
  "lib-asset",
  "lib-col",
  "log",
@@ -1040,8 +1035,8 @@ dependencies = [
 
 [[package]]
 name = "mimiq"
-version = "0.4.3"
-source = "git+https://github.com/InnocentusLime/miniquad?tag=v0.4.3#fc26f208279b427e8248aa1870e398142562943f"
+version = "0.4.4"
+source = "git+https://github.com/InnocentusLime/miniquad?tag=v0.4.4#647d73d4f758178e78db88255034f3461b9c2f31"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -1573,19 +1568,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quad-jam-2024"
-version = "0.26.0"
-dependencies = [
- "anyhow",
- "clap",
- "lib-asset",
- "lib-col",
- "lib-game",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "quick-xml"
 version = "0.37.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2069,6 +2051,19 @@ dependencies = [
  "tracing-subscriber",
  "wasm-bindgen",
  "web-sys",
+]
+
+[[package]]
+name = "trishoot"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "lib-asset",
+ "lib-col",
+ "lib-game",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

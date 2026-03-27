@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use glam::{Affine2, Vec2, vec2};
 use hecs::Entity;
 use lib_col::{Aabb, Collider, CollisionSolver, Group, Shape, rect_points};
+use mimiq::glam::{Affine2, Vec2, vec2};
 use svg::node::element::{Circle, Path, path::Data};
 
 const TRANSFORM_COUNT: usize = 10;
