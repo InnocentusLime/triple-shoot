@@ -1568,19 +1568,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quad-jam-2024"
-version = "0.26.0"
-dependencies = [
- "anyhow",
- "clap",
- "lib-asset",
- "lib-col",
- "lib-game",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "quick-xml"
 version = "0.37.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2064,6 +2051,19 @@ dependencies = [
  "tracing-subscriber",
  "wasm-bindgen",
  "web-sys",
+]
+
+[[package]]
+name = "trishoot"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "lib-asset",
+ "lib-col",
+ "lib-game",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
