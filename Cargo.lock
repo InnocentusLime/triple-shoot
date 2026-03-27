@@ -1035,8 +1035,8 @@ dependencies = [
 
 [[package]]
 name = "mimiq"
-version = "0.4.4"
-source = "git+https://github.com/InnocentusLime/miniquad?tag=v0.4.4#647d73d4f758178e78db88255034f3461b9c2f31"
+version = "0.4.5"
+source = "git+https://github.com/InnocentusLime/miniquad?tag=v0.4.5#0c31a718ea3a8fd6c3deaa7c7cafd0f7cd2961f4"
 dependencies = [
  "anyhow",
  "bytemuck",
