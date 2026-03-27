@@ -148,7 +148,7 @@ impl<T: 'static> AssetManager<T> {
         let data = match event.bytes_result {
             Ok(x) => x,
             Err(err) => {
-                tracing::error!(err=?err, path=?asset_path, "fs error");
+                tracing::error!(path=?asset_path, "fs error: {err:#}");
                 self.nodes.insert(asset_path, node.fail());
                 return None;
             }
@@ -248,7 +248,7 @@ impl<T> AssetNodeState<T> {
         match on_deps_ready(ctx, fs_resolver, data) {
             Ok(_) => AssetNodeState::Initialized,
             Err(err) => {
-                tracing::error!(err=?err, "failed");
+                tracing::error!("failed: {err:#}");
                 AssetNodeState::Failed
             }
         }
@@ -266,7 +266,7 @@ impl<T> AssetNodeState<T> {
         let deps = match on_bytes_ready(&data) {
             Ok(deps) => deps,
             Err(err) => {
-                tracing::error!(err=?err, "failed");
+                tracing::error!("failed: {err:#}");
                 return (Vec::new(), AssetNodeState::Failed);
             }
         };
