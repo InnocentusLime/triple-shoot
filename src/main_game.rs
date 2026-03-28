@@ -56,13 +56,18 @@ impl State for MainGame {
         resources: &mut Resources,
         cmds: &mut CommandBuffer,
     ) {
-        for (_, (tf, tag)) in &mut resources.world.query::<(&mut Transform, &PlayerTag)>() {
+        for (_, (tf, arsenal)) in &mut resources.world.query::<(&mut Transform, &PlayerArsenal)>() {
             tf.pos += 13.0 * dt * input_model.player_move_direction;
             let pos = tf.pos + vec2(32.0, 0.0);
 
             if input_model.shoot_pressed {
                 info!("shoot");
-                spawn_prefab(cmds, resources, tag.bullet_prefab, Transform::from_pos(pos));
+                spawn_prefab(
+                    cmds,
+                    resources,
+                    arsenal.bullet_prefab,
+                    Transform::from_pos(pos),
+                );
             }
         }
 

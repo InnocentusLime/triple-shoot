@@ -6,29 +6,29 @@ use serde::Deserialize;
 
 pub fn register_components(prefab_factory: &mut lib_game::PrefabFactory<Resources>) {
     prefab_factory.register_component_with_constructor_ctx(
-        "player",
-        PlayerTagManifest::into_tag,
-        PlayerTagManifest::dependencies,
+        "player_arsenal",
+        PlayerArsenalManifest::into_tag,
+        PlayerArsenalManifest::dependencies,
     );
     prefab_factory.register_component::<BulletTag>("bullet");
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct PlayerTag {
+pub struct PlayerArsenal {
     pub bullet_prefab: AssetKey,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct PlayerTagManifest {
+pub struct PlayerArsenalManifest {
     pub bullet_prefab: PathBuf,
 }
 
-impl PlayerTagManifest {
-    pub fn into_tag(self, resources: &mut Resources) -> anyhow::Result<PlayerTag> {
+impl PlayerArsenalManifest {
+    pub fn into_tag(self, resources: &mut Resources) -> anyhow::Result<PlayerArsenal> {
         let Some(bullet_prefab) = resources.prefabs.resolve(&self.bullet_prefab) else {
             anyhow::bail!("No such prefab: {:?}", self.bullet_prefab);
         };
-        Ok(PlayerTag { bullet_prefab })
+        Ok(PlayerArsenal { bullet_prefab })
     }
 
     pub fn dependencies(data: &serde_json::value::RawValue) -> anyhow::Result<Vec<PathBuf>> {
