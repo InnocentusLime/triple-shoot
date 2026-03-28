@@ -9,20 +9,29 @@ pub struct InputModel {
 }
 
 pub struct Input {
+    /// tracks the mouse cursor position in world coordinates.
+    cursor_pos: Vec2,
     buttons: InputTracker,
 }
 
 impl Input {
     pub fn new() -> Self {
-        Input { buttons: InputTracker::new() }
+        Input { cursor_pos: Vec2::ZERO, buttons: InputTracker::new() }
     }
 
     pub fn update(&mut self) {
+        dump!("cursor pos {:.2}", self.cursor_pos);
         self.buttons.update();
     }
 
     pub fn handle_event(&mut self, event: &WindowEvent) {
         self.buttons.handle_event(event);
+        match event {
+            WindowEvent::CursorMoved { position, .. } => {
+                self.cursor_pos = vec2(position.x as f32, position.y as f32);
+            }
+            _ => (),
+        }
     }
 
     pub fn get_input_model(&self) -> InputModel {
