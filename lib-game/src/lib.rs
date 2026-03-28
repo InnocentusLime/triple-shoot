@@ -24,7 +24,7 @@ use std::rc::Rc;
 #[cfg(feature = "dbg")]
 macro_rules! dump {
     ($($arg:tt)+) => {
-        $crate::dbg::GLOBAL_DUMP.put_line(std::format_args!($($arg)+));
+        $crate::dbg::GLOBAL_DUMP.put_line(std::module_path!(), std::format_args!($($arg)+));
     };
 }
 

@@ -52,7 +52,7 @@ impl App {
         if let Some(cmd) = self.debug.cmd_center.show(egui_ctx) {
             self.handle_command(cmd);
         }
-        GLOBAL_DUMP.show(egui_ctx);
+        GLOBAL_DUMP.ui(egui_ctx);
     }
 
     fn handle_command(&mut self, cmd: DebugCommand) {
