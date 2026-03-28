@@ -32,9 +32,16 @@ impl DebugStuff {
 impl App {
     pub fn dump_common_info(&mut self) {
         let ent_count = self.resources.world.iter().count();
+        let player_count = self
+            .resources
+            .world
+            .query_mut::<&PlayerTag>()
+            .into_iter()
+            .count();
 
         // dump!("FPS: {:?}", get_fps());
         dump!("Entities: {ent_count}");
+        dump!("Players: {player_count}");
         self.dump_archetypes();
         GLOBAL_DUMP.lock();
     }
