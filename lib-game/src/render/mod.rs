@@ -45,6 +45,7 @@ impl Render {
         resources
             .gl_ctx
             .default_pass(Clear::depth_color(BLACK), |width, height| {
+                dump!("Default pass dimensions: ({width}, {height})");
                 let view_projection =
                     Mat4::orthographic_rh_gl(0.0, width as f32, height as f32, 0.0, 0.0, 100.0);
                 if self.render_world {
