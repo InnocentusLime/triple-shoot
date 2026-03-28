@@ -22,6 +22,7 @@ pub fn spawn_prefab(
 pub fn register_libgame_components(prefab_factory: &mut PrefabFactory<Resources>) {
     prefab_factory.register_component_with_constructor("transform", Transform::from_pos);
     prefab_factory.register_component_with_constructor("body", BodyTagManifest::into_body_tag);
+    prefab_factory.register_component::<PlayerTag>("player");
 
     prefab_factory.register_component_with_constructor_ctx(
         "sprite",
