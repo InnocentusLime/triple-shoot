@@ -1,3 +1,4 @@
+use crate::components::*;
 use crate::prelude::*;
 
 use mimiq::util::InputTracker;
@@ -6,6 +7,7 @@ use mimiq::util::InputTracker;
 pub struct InputModel {
     pub player_move_direction: Vec2,
     pub shoot_pressed: bool,
+    pub player_aim_direction: Vec2,
 }
 
 pub struct Input {
@@ -34,7 +36,7 @@ impl Input {
         }
     }
 
-    pub fn get_input_model(&self) -> InputModel {
+    pub fn get_input_model(&self, world: &mut World) -> InputModel {
         let mut player_move_direction = Vec2::ZERO;
         if self.buttons.is_key_held(KeyCode::KeyA) {
             player_move_direction += Vec2::NEG_X;
@@ -52,7 +54,13 @@ impl Input {
 
         let shoot_pressed = self.buttons.is_button_pressed(MouseButton::Left);
 
-        let model = InputModel { player_move_direction, shoot_pressed };
+        let mut player_aim_direction = Vec2::Y;
+        for (_, player_tf) in world.query_mut::<&Transform>().with::<&PlayerTag>() {
+            let dr = self.cursor_pos - player_tf.pos;
+            player_aim_direction = dr.normalize_or(player_aim_direction);
+        }
+
+        let model = InputModel { player_move_direction, shoot_pressed, player_aim_direction };
         dump!("input: {model:#.2?}");
         model
     }

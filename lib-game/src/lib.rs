@@ -165,7 +165,7 @@ impl mimiq::EventHandler<AppInit> for App {
 
 impl App {
     fn update_inner(&mut self, dt: f32) -> Option<StateRequest> {
-        let input_model = self.input.get_input_model();
+        let input_model = self.input.get_input_model(&mut self.resources.world);
         self.state
             .input(dt, &input_model, &mut self.resources, &mut self.cmds);
 
