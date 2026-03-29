@@ -1,6 +1,8 @@
 mod cmd;
 mod screendump;
 
+use std::path::PathBuf;
+
 use crate::components::*;
 use crate::prelude::*;
 use crate::{App, DebugCommand};
@@ -102,7 +104,6 @@ impl App {
                     return;
                 }
 
-                let prefab_path = &cmd.args[0];
                 let Ok(x) = cmd.args[1].trim().parse::<f32>() else {
                     error!("Second argument is not a number");
                     return;
@@ -111,7 +112,9 @@ impl App {
                     error!("Third argument is not a number");
                     return;
                 };
-                let Some(prefab_handle) = self.resources.prefabs.resolve(prefab_path) else {
+                let mut prefab_path = PathBuf::from_iter(["prefab", &cmd.args[0]]);
+                prefab_path.set_extension("json");
+                let Some(prefab_handle) = self.resources.prefabs.resolve(&prefab_path) else {
                     error!("No such prefab: {prefab_path:?}");
                     return;
                 };
