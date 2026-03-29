@@ -11,7 +11,7 @@ pub struct CollisionQuery<const ID: usize> {
     /// Setting it to an empty group will make the
     /// collision engine skip this query.
     #[serde(deserialize_with = "decode_collision_group_manifest")]
-    pub group: Group,
+    pub groups: Group,
     /// The group filter.
     /// The engine will pick all entities inside
     /// that group.
@@ -24,8 +24,8 @@ pub struct CollisionQuery<const ID: usize> {
 }
 
 impl<const ID: usize> CollisionQuery<ID> {
-    pub fn new(collider: Shape, group: Group, filter: Group) -> Self {
-        Self { collider, group, filter, collision_slice: Default::default() }
+    pub fn new(collider: Shape, groups: Group, filter: Group) -> Self {
+        Self { collider, groups, filter, collision_slice: Default::default() }
     }
 
     pub fn has_collided(&self) -> bool {
