@@ -1,0 +1,13 @@
+{
+    "team": "Enemy",
+    "transform": [64.0, 64.0],
+    "hp": 1,
+    "body": {
+        "groups": ["Characters"],
+        "shape": {
+            "type": "Rect",
+            "width": 64.0,
+            "height": 32.0
+        }
+    }
+}

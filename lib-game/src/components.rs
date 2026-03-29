@@ -17,37 +17,14 @@ pub enum Team {
     Enemy,
 }
 
-/// [Health] component stores entity's health.
-/// Normally, to do damage, you should just put it into the `damage` field.
-/// `damage` is zeroed every frame and is substracted to `value`.
-/// When the `block_damage` flag is raised, `damage` is ignored this frame.
-#[derive(Debug, Clone, Copy)]
-pub struct Health {
-    pub value: i32,
-    pub damage: i32,
-    pub is_invulnerable: bool,
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct Hp {
+    pub hp: i32,
 }
 
-impl Health {
-    pub fn new(value: i32) -> Self {
-        Self { value, damage: 0, is_invulnerable: false }
-    }
-}
-
-/// [DamageCooldown] enables cooldown on damage.
-/// When [Health] contains more than zero damage and the entity
-/// has [DamageCooldown] component, the game will raise the `block_damage`
-/// flag. It will remain raised for the duration of `max_value`.
-/// `remaining` is used to track the remaining invulnerability time.
-#[derive(Debug, Clone, Copy)]
-pub struct DamageCooldown {
-    pub remaining: f32,
-    pub max_value: f32,
-}
-
-impl DamageCooldown {
-    pub fn new(max_value: f32) -> Self {
-        Self { max_value, remaining: 0.0 }
+impl Hp {
+    pub fn new(hp: i32) -> Self {
+        Self { hp }
     }
 }
 

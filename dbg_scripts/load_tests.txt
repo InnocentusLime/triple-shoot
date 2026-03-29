@@ -1,1 +1,2 @@
 lass prefab/test_wall.json
+lass prefab/test_dummy.json
