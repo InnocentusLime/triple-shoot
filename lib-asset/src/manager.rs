@@ -13,6 +13,14 @@ use hecs::{BuiltEntityClone, EntityBuilderClone};
 
 const TARGET_NAME: &str = "asset_manager";
 
+#[cfg(feature = "dbg")]
+pub struct AssetNodeDebug<'a> {
+    pub path: &'a Path,
+    pub ty: &'static str,
+    pub state: &'static str,
+    pub deps_not_loaded: usize,
+}
+
 pub struct AssetManager<T> {
     pub fs_resolver: FsResolver,
     prefab_factory: Rc<PrefabFactory<T>>,
@@ -32,6 +40,16 @@ impl<T: 'static> AssetManager<T> {
             dependents: HashMap::new(),
             queue: VecDeque::new(),
         }
+    }
+
+    #[cfg(feature = "dbg")]
+    pub fn iter_node_dependents(&self) -> impl Iterator<Item = (&Path, &[Rc<Path>])> {
+        self.dependents.iter().map(|(k, v)| (&**k, v.as_slice()))
+    }
+
+    #[cfg(feature = "dbg")]
+    pub fn iter_node_debug(&'_ self) -> impl Iterator<Item = AssetNodeDebug<'_>> {
+        self.nodes.values().map(|x| x.dbg_info())
     }
 
     pub fn iter_assets_to_load(&self) -> impl Iterator<Item = &Rc<Path>> {
@@ -178,6 +196,17 @@ struct AssetNode<T> {
 }
 
 impl<T> AssetNode<T> {
+    #[cfg(feature = "dbg")]
+    fn dbg_info(&'_ self) -> AssetNodeDebug<'_> {
+        let (state, deps_not_loaded) = match self.state {
+            AssetNodeState::PendingFsRequest { .. } => ("PendingFs", 0),
+            AssetNodeState::BytesReady { deps_not_loaded, .. } => ("BytesReady", deps_not_loaded),
+            AssetNodeState::Initialized => ("Initialized", 0),
+            AssetNodeState::Failed => ("Failed", 0),
+        };
+        AssetNodeDebug { path: &*self.src, ty: self.ty, state, deps_not_loaded }
+    }
+
     fn new(
         src: Rc<Path>,
         ty: &'static str,

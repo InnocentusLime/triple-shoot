@@ -35,6 +35,9 @@ impl DebugStuff {
 
 impl App {
     pub fn dump_common_info(&mut self) {
+        const TARGET_ASSET_NODES: &str = "lib_game::asset_nodes";
+        const TARGET_ASSET_DEPENDENTS: &str = "lib_game::asset_dependents";
+
         let ent_count = self.resources.world.iter().count();
         let player_count = self
             .resources
@@ -42,6 +45,14 @@ impl App {
             .query_mut::<&PlayerTag>()
             .into_iter()
             .count();
+
+        for node in self.asset_manager.iter_node_debug() {
+            dump!(target:TARGET_ASSET_NODES, "NODE: {:?} ({}) STATE: {} ({})", node.path, node.ty, node.state, node.deps_not_loaded);
+        }
+
+        for (asset, dependents) in self.asset_manager.iter_node_dependents() {
+            dump!(target:TARGET_ASSET_DEPENDENTS, "{asset:?}: {dependents:?}");
+        }
 
         // dump!("FPS: {:?}", get_fps());
         dump!("Entities: {ent_count}");

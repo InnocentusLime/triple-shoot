@@ -25,6 +25,9 @@ use std::rc::Rc;
 #[macro_export]
 #[cfg(feature = "dbg")]
 macro_rules! dump {
+    (target: $tgt:expr, $($arg:tt)+) => {
+        $crate::dbg::GLOBAL_DUMP.put_line($tgt, std::format_args!($($arg)+));
+    };
     ($($arg:tt)+) => {
         $crate::dbg::GLOBAL_DUMP.put_line(std::module_path!(), std::format_args!($($arg)+));
     };
@@ -33,6 +36,9 @@ macro_rules! dump {
 #[macro_export]
 #[cfg(not(feature = "dbg"))]
 macro_rules! dump {
+    (target:$tgt:expr, $($arg:tt)+) => {
+        /* NOOP */
+    };
     ($($arg:tt)+) => {
         /* NOOP */
     };
