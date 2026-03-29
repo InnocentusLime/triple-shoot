@@ -1,5 +1,5 @@
 {
-    "transform": [64.0, 64.0],
+    "transform": null,
     "sprite": {
         "layer": 0,
         "texture": "atlas/bnuuy.png",

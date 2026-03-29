@@ -4,7 +4,7 @@
     "player_arsenal": {
         "bullet_prefab": "prefab/test_bullet.json"
     },
-    "transform": [64.0, 64.0],
+    "transform": null,
     "sprite": {
         "layer": 0,
         "texture": "atlas/bnuuy.png",
