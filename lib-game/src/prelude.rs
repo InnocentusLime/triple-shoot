@@ -8,5 +8,6 @@ pub use mimiq::glam::*;
 pub use mimiq::winit::event::{MouseButton, WindowEvent};
 pub use mimiq::winit::keyboard::KeyCode;
 pub use mimiq::winit::window::Window;
+pub use serde::Deserialize;
 
 pub use crate::{Resources, dump};
