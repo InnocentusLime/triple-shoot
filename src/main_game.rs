@@ -10,7 +10,7 @@ impl MainGame {
         StateRequest {
             name: "main game",
             constructor: Box::new(Self::new_state),
-            dependencies: vec!["prefab/player.json".into(), "prefab/test_wall.json".into()],
+            dependencies: vec!["prefab/player.json".into()],
         }
     }
 
