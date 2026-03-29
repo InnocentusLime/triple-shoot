@@ -1,5 +1,7 @@
 {
-    "bullet": null,
+    "projectile": {
+        "speed": 32.0
+    },
     "transform": [64.0, 64.0],
     "sprite": {
         "layer": 0,
@@ -9,8 +11,21 @@
         "tex_rect_pos": [32, 17],
         "tex_rect_size": [16, 16]
     },
-    "body": {
+    "kinematic": {
+        "collision": ["Level"],
+        "slide": false
+    },
+    "damage_query": {
         "groups": ["Characters"],
+        "filter": ["Player"],
+        "collider": {
+            "type": "Rect",
+            "width": 64.0,
+            "height": 32.0
+        }
+    },
+    "body": {
+        "groups": ["Attacks"],
         "shape": {
             "type": "Rect",
             "width": 64.0,

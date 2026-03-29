@@ -10,7 +10,7 @@ impl MainGame {
         StateRequest {
             name: "main game",
             constructor: Box::new(Self::new_state),
-            dependencies: vec!["prefab/player.json".into()],
+            dependencies: vec!["prefab/player.json".into(), "prefab/test_wall.json".into()],
         }
     }
 
@@ -69,14 +69,6 @@ impl State for MainGame {
                     Transform::from_pos(pos),
                 );
             }
-        }
-
-        for (_, tf) in &mut resources
-            .world
-            .query::<&mut Transform>()
-            .with::<&BulletTag>()
-        {
-            tf.pos += 34.0 * dt * Vec2::X;
         }
     }
 }

@@ -1,0 +1,11 @@
+{
+    "transform": [64.0, 64.0],
+    "body": {
+        "groups": ["Level"],
+        "shape": {
+            "type": "Rect",
+            "width": 16.0,
+            "height": 256.0
+        }
+    }
+}

@@ -3,12 +3,11 @@ pub use crate::render::components::*;
 
 use crate::prelude::*;
 
-#[derive(Debug, Clone, Copy, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize)]
 pub struct PlayerTag;
 
-#[derive(Debug, Clone, Copy)]
-pub struct ProjectileData {
-    pub dir: Vec2,
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct ProjectileTag {
     pub speed: f32,
 }
 
