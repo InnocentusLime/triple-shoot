@@ -231,6 +231,7 @@ impl<T> AssetNode<T> {
         .entered();
 
         let state = self.state.dependency_ready(fs_resolver, ctx);
+        tracing::debug!(?state, "ack");
         AssetNode { state, ..self }
     }
 
