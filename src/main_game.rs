@@ -58,7 +58,7 @@ impl State for MainGame {
     ) {
         for (_, (tf, arsenal)) in &mut resources.world.query::<(&mut Transform, &PlayerArsenal)>() {
             tf.pos += 13.0 * dt * input_model.player_move_direction;
-            let pos = tf.pos + vec2(32.0, 0.0);
+            let pos = tf.pos + 32.0 * input_model.player_aim_direction;
 
             if input_model.shoot_pressed {
                 info!("shoot");
@@ -66,7 +66,7 @@ impl State for MainGame {
                     cmds,
                     resources,
                     arsenal.bullet_prefab,
-                    Transform::from_pos(pos),
+                    Transform { pos, angle: input_model.player_aim_direction.to_angle() },
                 );
             }
         }
