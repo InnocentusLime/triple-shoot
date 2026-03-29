@@ -2,7 +2,7 @@
     "player": null,
     "team": "Player",
     "player_arsenal": {
-        "bullet_prefab": "prefab/test_bullet.json"
+        "bullet_prefab": "prefab/test/bullet.json"
     },
     "transform": null,
     "sprite": {
