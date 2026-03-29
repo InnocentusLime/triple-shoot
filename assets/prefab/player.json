@@ -1,5 +1,6 @@
 {
     "player": null,
+    "team": "Player",
     "player_arsenal": {
         "bullet_prefab": "prefab/test_bullet.json"
     },
