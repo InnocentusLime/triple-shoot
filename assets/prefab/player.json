@@ -1,7 +1,7 @@
 {
     "player": null,
     "player_arsenal": {
-        "bullet_prefab": "prefab/bullet.json"
+        "bullet_prefab": "prefab/test_bullet.json"
     },
     "transform": [64.0, 64.0],
     "sprite": {
