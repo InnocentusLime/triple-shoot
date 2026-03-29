@@ -1,6 +1,6 @@
 {
     "team": "Enemy",
-    "transform": [64.0, 64.0],
+    "transform": null,
     "hp": 1,
     "body": {
         "groups": ["Characters"],

@@ -1,5 +1,5 @@
 {
-    "transform": [64.0, 64.0],
+    "transform": null,
     "body": {
         "groups": ["Level"],
         "shape": {
