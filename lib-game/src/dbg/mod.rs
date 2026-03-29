@@ -1,6 +1,7 @@
 mod cmd;
 mod screendump;
 
+use std::path::Path;
 use std::path::PathBuf;
 
 use crate::components::*;
@@ -74,6 +75,13 @@ impl App {
             "hw" => self.render.render_world = false,
             "sw" => self.render.render_world = true,
             "clw" => self.resources.world.clear(),
+            "lass" => {
+                if cmd.args.is_empty() {
+                    anyhow::bail!("Not enough args");
+                }
+
+                self.queue_assets(std::iter::once(cmd.args[0].as_str()));
+            }
             "dde" => {
                 if cmd.args.is_empty() {
                     anyhow::bail!("Not enough args");
@@ -109,8 +117,7 @@ impl App {
                 let Ok(y) = cmd.args[2].trim().parse::<f32>() else {
                     anyhow::bail!("Third argument is not a number");
                 };
-                let mut prefab_path = PathBuf::from_iter(["prefab", &cmd.args[0]]);
-                prefab_path.set_extension("json");
+                let prefab_path = make_prefab_path(cmd.args[0].as_str());
                 let Some(prefab_handle) = self.resources.prefabs.resolve(&prefab_path) else {
                     anyhow::bail!("No such prefab: {prefab_path:?}");
                 };
@@ -156,7 +163,7 @@ impl App {
     }
 
     #[cfg(feature = "dev-env")]
-    fn run_script(&mut self, path: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
+    fn run_script(&mut self, path: impl AsRef<Path>) -> anyhow::Result<()> {
         use anyhow::Context;
         use std::{fs, io::BufRead};
 
@@ -173,4 +180,10 @@ impl App {
 
         Ok(())
     }
+}
+
+fn make_prefab_path(name: impl AsRef<Path>) -> PathBuf {
+    let mut prefab_path = PathBuf::from_iter([Path::new("prefab"), name.as_ref()]);
+    prefab_path.set_extension("json");
+    prefab_path
 }
