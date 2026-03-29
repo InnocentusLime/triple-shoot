@@ -1,0 +1,3 @@
+dde phys
+spawn player 64 64
+spawn test_wall 256 64

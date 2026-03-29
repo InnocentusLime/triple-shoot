@@ -21,7 +21,7 @@ impl MainGame {
 
 impl State for MainGame {
     fn handle_command(&mut self, _resources: &mut Resources, cmd: &DebugCommand) -> bool {
-        match cmd.command.as_str() {
+        match &*cmd.command {
             "nopl" => self.do_player_controls = false,
             "pl" => self.do_player_controls = true,
             "noai" => self.do_ai = false,
