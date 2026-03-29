@@ -11,7 +11,7 @@ pub struct ProjectileTag {
     pub speed: f32,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 pub enum Team {
     Player,
     Enemy,

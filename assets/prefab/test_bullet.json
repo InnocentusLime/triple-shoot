@@ -2,6 +2,7 @@
     "projectile": {
         "speed": 32.0
     },
+    "team": "Player",
     "transform": [64.0, 64.0],
     "sprite": {
         "layer": 0,
@@ -17,7 +18,7 @@
     },
     "damage_query": {
         "groups": ["Characters"],
-        "filter": ["Player"],
+        "filter": [],
         "collider": {
             "type": "Rect",
             "width": 64.0,
