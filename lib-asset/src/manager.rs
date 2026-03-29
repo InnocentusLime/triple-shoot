@@ -173,11 +173,11 @@ impl<T: 'static> AssetManager<T> {
         };
 
         let deps: Vec<PathBuf>;
-        (deps, node) = node.bytes_ready(&self.nodes, data);
+        let already_ready: bool;
+        (deps, already_ready, node) = node.bytes_ready(&self.nodes, data);
         tracing::debug!(target: TARGET_NAME, deps=?deps, path=?asset_path, state=?node.state, "bytes parsed");
         self.nodes.insert(asset_path.clone(), node);
 
-        let already_ready = deps.is_empty();
         for path in deps {
             self.dependents
                 .entry(path.into())
@@ -239,7 +239,7 @@ impl<T> AssetNode<T> {
         self,
         others: &HashMap<Rc<Path>, AssetNode<T>>,
         data: Vec<u8>,
-    ) -> (Vec<PathBuf>, Self) {
+    ) -> (Vec<PathBuf>, bool, Self) {
         let _span = tracing::info_span!(
             target: TARGET_NAME,
             "bytes_ready",
@@ -248,8 +248,8 @@ impl<T> AssetNode<T> {
         )
         .entered();
 
-        let (deps, state) = self.state.bytes_ready(others, data);
-        (deps, AssetNode { state, ..self })
+        let (deps, all_deps_ready, state) = self.state.bytes_ready(others, data);
+        (deps, all_deps_ready, AssetNode { state, ..self })
     }
 }
 
@@ -288,16 +288,16 @@ impl<T> AssetNodeState<T> {
         self,
         others: &HashMap<Rc<Path>, AssetNode<T>>,
         data: Vec<u8>,
-    ) -> (Vec<PathBuf>, Self) {
+    ) -> (Vec<PathBuf>, bool, Self) {
         let AssetNodeState::PendingFsRequest { on_bytes_ready, on_deps_ready } = self else {
             tracing::warn!("not wating for bytes");
-            return (Vec::new(), AssetNodeState::Failed);
+            return (Vec::new(), false, AssetNodeState::Failed);
         };
         let deps = match on_bytes_ready(&data) {
             Ok(deps) => deps,
             Err(err) => {
                 tracing::error!("failed: {err:#}");
-                return (Vec::new(), AssetNodeState::Failed);
+                return (Vec::new(), false, AssetNodeState::Failed);
             }
         };
 
@@ -312,6 +312,7 @@ impl<T> AssetNodeState<T> {
             .count();
         (
             deps,
+            deps_not_loaded == 0,
             AssetNodeState::BytesReady { data, deps_not_loaded, on_deps_ready },
         )
     }
