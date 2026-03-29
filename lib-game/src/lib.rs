@@ -18,6 +18,7 @@ pub use prefab::spawn_prefab;
 pub use prelude::*;
 pub use state::*;
 
+use std::borrow::Cow;
 use std::path::Path;
 use std::rc::Rc;
 
@@ -43,9 +44,23 @@ pub fn run(init: AppInit) {
 }
 
 #[derive(Debug)]
-pub struct DebugCommand {
-    pub command: String,
-    pub args: Vec<String>,
+pub struct DebugCommand<'a> {
+    pub command: Cow<'a, str>,
+    pub args: Vec<Cow<'a, str>>,
+}
+
+impl<'a> DebugCommand<'a> {
+    pub fn to_owned(self) -> DebugCommand<'static> {
+        DebugCommand {
+            command: Cow::Owned(self.command.into_owned()),
+            args: self
+                .args
+                .into_iter()
+                .map(Cow::into_owned)
+                .map(Cow::Owned)
+                .collect(),
+        }
+    }
 }
 
 pub struct AppInit {

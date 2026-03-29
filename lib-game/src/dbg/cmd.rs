@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::DebugCommand;
 
 use egui::{Modal, TextEdit};
@@ -19,7 +21,7 @@ impl CommandCenter {
         !self.buff.is_empty()
     }
 
-    pub fn show(&mut self, ctx: &egui::Context) -> Option<DebugCommand> {
+    pub fn show(&mut self, ctx: &egui::Context) -> Option<DebugCommand<'static>> {
         let (close, submit, begin_command) = ctx.input(|inp| {
             let close = inp.key_pressed(egui::Key::Escape);
             let submit = inp.key_pressed(egui::Key::Enter);
@@ -47,7 +49,7 @@ impl CommandCenter {
         ui: &mut egui::Ui,
         submit: bool,
         begin_command: bool,
-    ) -> Option<DebugCommand> {
+    ) -> Option<DebugCommand<'static>> {
         ui.set_width(CMD_WIDTH);
 
         let output = TextEdit::singleline(&mut self.buff)
@@ -55,7 +57,10 @@ impl CommandCenter {
             .desired_width(CMD_WIDTH)
             .show(ui);
         if output.response.lost_focus() && submit {
-            let res = parse_command(&self.buff);
+            if self.buff.is_empty() || &self.buff[0..1] != ":" {
+                return None;
+            }
+            let res = parse_command(&self.buff[1..]).map(DebugCommand::to_owned);
             self.buff.clear();
             return res;
         }
@@ -67,9 +72,9 @@ impl CommandCenter {
     }
 }
 
-fn parse_command(s: &str) -> Option<DebugCommand> {
-    let s = &s[1..];
+pub fn parse_command(s: &'_ str) -> Option<DebugCommand<'_>> {
     let mut parts = s.split_ascii_whitespace();
-    let command = parts.next()?.to_string();
-    Some(DebugCommand { command, args: parts.map(|x| x.to_string()).collect() })
+    let command = parts.next()?;
+    let args = parts.map(Cow::Borrowed).collect();
+    Some(DebugCommand { command: Cow::Borrowed(command), args })
 }
