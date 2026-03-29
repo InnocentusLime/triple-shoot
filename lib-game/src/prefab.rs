@@ -21,8 +21,14 @@ pub fn spawn_prefab(
 
 pub fn register_libgame_components(prefab_factory: &mut PrefabFactory<Resources>) {
     prefab_factory.register_component_with_constructor("transform", Transform::from_pos);
-    prefab_factory.register_component_with_constructor("body", BodyTagManifest::into_body_tag);
+    prefab_factory.register_component::<BodyTag>("body");
+    prefab_factory.register_component::<KinematicControl>("kinematic");
     prefab_factory.register_component::<PlayerTag>("player");
+    prefab_factory.register_component::<col_query::Level>("level_query");
+    prefab_factory.register_component::<col_query::Damage>("damage_query");
+    prefab_factory.register_component::<col_query::Pickup>("pickup_query");
+    prefab_factory.register_component::<col_query::Interaction>("interaction_query");
+    prefab_factory.register_component::<col_query::Grazing>("grazing_query");
 
     prefab_factory.register_component_with_constructor_ctx(
         "sprite",
@@ -65,41 +71,5 @@ impl SpriteManifest {
         }
         let deps = serde_json::from_str::<Deps>(data.get())?;
         Ok(vec![deps.texture.into()])
-    }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct BodyTagManifest {
-    pub groups: Vec<CollisionGroupManifest>,
-    pub shape: Shape,
-}
-
-impl BodyTagManifest {
-    pub fn into_body_tag(self) -> BodyTag {
-        let groups = self
-            .groups
-            .into_iter()
-            .map(CollisionGroupManifest::into_group)
-            .fold(col_group::NONE, Group::union);
-        BodyTag { groups, shape: self.shape }
-    }
-}
-
-#[derive(Debug, Deserialize)]
-pub enum CollisionGroupManifest {
-    Level,
-    Characters,
-    Player,
-    Attacks,
-}
-
-impl CollisionGroupManifest {
-    pub fn into_group(self) -> Group {
-        match self {
-            CollisionGroupManifest::Level => col_group::LEVEL,
-            CollisionGroupManifest::Characters => col_group::CHARACTERS,
-            CollisionGroupManifest::Player => col_group::PLAYER,
-            CollisionGroupManifest::Attacks => col_group::ATTACKS,
-        }
     }
 }
