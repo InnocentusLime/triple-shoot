@@ -29,6 +29,7 @@ pub fn register_libgame_components(prefab_factory: &mut PrefabFactory<Resources>
     prefab_factory.register_component::<col_query::Pickup>("pickup_query");
     prefab_factory.register_component::<col_query::Interaction>("interaction_query");
     prefab_factory.register_component::<col_query::Grazing>("grazing_query");
+    prefab_factory.register_component::<ProjectileTag>("projectile");
 
     prefab_factory.register_component_with_constructor_ctx(
         "sprite",

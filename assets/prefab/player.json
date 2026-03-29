@@ -12,6 +12,10 @@
         "tex_rect_pos": [1, 1],
         "tex_rect_size": [16, 16]
     },
+    "kinematic": {
+        "collision": ["Level"],
+        "slide": true
+    },
     "body": {
         "groups": ["Characters"],
         "shape": {

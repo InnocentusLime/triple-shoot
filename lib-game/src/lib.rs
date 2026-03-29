@@ -3,6 +3,7 @@ mod components;
 mod input;
 mod prefab;
 mod prelude;
+mod projectile;
 mod render;
 
 #[cfg(feature = "dbg")]
@@ -168,6 +169,7 @@ impl App {
         let input_model = self.input.get_input_model(&mut self.resources.world);
         self.state
             .input(dt, &input_model, &mut self.resources, &mut self.cmds);
+        projectile::step(dt, &mut self.resources.world);
 
         self.col_solver.import_colliders(&mut self.resources.world);
         self.col_solver
@@ -179,6 +181,7 @@ impl App {
 
         self.col_solver
             .compute_collisions(&mut self.resources.world);
+        projectile::impact(&mut self.resources.world, &self.col_solver, &mut self.cmds);
 
         let res = self
             .state
