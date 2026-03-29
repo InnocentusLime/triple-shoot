@@ -116,7 +116,7 @@ fn get_query_collider<const ID: usize>(
     query: &CollisionQuery<ID>,
 ) -> lib_col::Collider {
     let shape_pos = world_tf_to_phys(*tf);
-    lib_col::Collider { tf: shape_pos, shape: query.collider, group: query.group }
+    lib_col::Collider { tf: shape_pos, shape: query.collider, group: query.groups }
 }
 
 fn get_entity_collider(tf: &Transform, info: &BodyTag) -> lib_col::Collider {
