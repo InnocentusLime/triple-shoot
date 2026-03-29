@@ -73,6 +73,7 @@ impl App {
             "uf" => self.debug.force_freeze = false,
             "hw" => self.render.render_world = false,
             "sw" => self.render.render_world = true,
+            "clw" => self.resources.world.clear(),
             "dde" => {
                 if cmd.args.is_empty() {
                     anyhow::bail!("Not enough args");
