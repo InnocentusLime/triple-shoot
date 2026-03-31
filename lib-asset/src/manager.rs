@@ -312,6 +312,7 @@ mod tests {
 
     static PATH_A: LazyLock<&Path> = LazyLock::new(|| Path::new("A"));
     static PATH_B: LazyLock<&Path> = LazyLock::new(|| Path::new("B"));
+    static PATH_C: LazyLock<&Path> = LazyLock::new(|| Path::new("C"));
 
     #[test]
     fn simple_upload() {
@@ -352,6 +353,126 @@ mod tests {
         manager.create_asset_task(simple_node(*PATH_B, vec![]));
         manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
         assert!(manager.nodes[*PATH_A].state.is_initialized());
+    }
+
+    #[test]
+    fn upload_with_deps_reverse() {
+        init_test_logger();
+        let mut manager = make_manager();
+
+        manager.create_asset_task(simple_node(*PATH_B, vec![]));
+        manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
+        assert!(manager.nodes[*PATH_B].state.is_initialized());
+
+        manager.create_asset_task(simple_node(*PATH_A, vec![PATH_B.to_path_buf()]));
+        manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
+        assert!(manager.dependents.contains_key(*PATH_B));
+        assert!(manager.nodes[*PATH_A].state.is_initialized());
+    }
+
+    #[test]
+    fn upload_with_deps_multi() {
+        init_test_logger();
+        let mut manager = make_manager();
+
+        manager.create_asset_task(simple_node(
+            *PATH_A,
+            vec![PATH_B.to_path_buf(), PATH_C.to_path_buf()],
+        ));
+        manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
+        assert!(manager.nodes.contains_key(*PATH_A));
+        assert!(manager.dependents.contains_key(*PATH_B));
+        assert!(manager.dependents.contains_key(*PATH_C));
+        assert!(matches!(
+            manager.nodes[*PATH_A].state,
+            AssetNodeState::BytesReady { deps_not_loaded: 2, .. }
+        ));
+
+        manager.create_asset_task(simple_node(*PATH_B, vec![]));
+        manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
+        assert!(matches!(
+            manager.nodes[*PATH_A].state,
+            AssetNodeState::BytesReady { deps_not_loaded: 1, .. }
+        ));
+
+        manager.create_asset_task(simple_node(*PATH_C, vec![]));
+        manager.on_file_ready(&mut (), file_ok(*PATH_C)).unwrap();
+
+        assert!(manager.nodes[*PATH_A].state.is_initialized());
+    }
+
+    #[test]
+    fn upload_with_deps_chain() {
+        init_test_logger();
+        let mut manager = make_manager();
+
+        manager.create_asset_task(simple_node(*PATH_A, vec![PATH_B.to_path_buf()]));
+        manager.create_asset_task(simple_node(*PATH_B, vec![PATH_C.to_path_buf()]));
+        manager.create_asset_task(simple_node(*PATH_C, vec![]));
+
+        manager.on_file_ready(&mut (), file_ok(*PATH_C)).unwrap();
+
+        manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
+        assert!(manager.nodes[*PATH_B].state.is_initialized());
+
+        manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
+        assert!(manager.nodes[*PATH_A].state.is_initialized());
+    }
+
+    #[test]
+    fn upload_with_deps_early_dep() {
+        init_test_logger();
+        let mut manager = make_manager();
+
+        manager.create_asset_task(simple_node(*PATH_B, vec![]));
+        manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
+
+        manager.create_asset_task(simple_node(
+            *PATH_A,
+            vec![PATH_B.to_path_buf(), PATH_C.to_path_buf()],
+        ));
+        manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
+        assert!(manager.nodes.contains_key(*PATH_A));
+        assert!(manager.dependents.contains_key(*PATH_B));
+        assert!(manager.dependents.contains_key(*PATH_C));
+        assert!(matches!(
+            manager.nodes[*PATH_A].state,
+            AssetNodeState::BytesReady { deps_not_loaded: 1, .. }
+        ));
+
+        manager.create_asset_task(simple_node(*PATH_C, vec![]));
+        manager.on_file_ready(&mut (), file_ok(*PATH_C)).unwrap();
+
+        assert!(manager.nodes[*PATH_A].state.is_initialized());
+    }
+
+    #[test]
+    fn repeat() {
+        init_test_logger();
+        let mut manager = make_manager();
+
+        manager.create_asset_task(simple_node(*PATH_A, vec![]));
+        manager.create_asset_task(simple_node(*PATH_A, vec![]));
+        manager.create_asset_task(simple_node(*PATH_A, vec![]));
+        manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
+        assert!(manager.nodes[*PATH_A].state.is_initialized());
+
+        manager.create_asset_task(simple_node(*PATH_A, vec![]));
+        assert!(manager.nodes[*PATH_A].state.is_initialized());
+    }
+
+    #[test]
+    fn upload_with_deps_cycle() {
+        init_test_logger();
+        let mut manager = make_manager();
+
+        manager.create_asset_task(simple_node(*PATH_A, vec![PATH_B.to_path_buf()]));
+        manager.create_asset_task(simple_node(*PATH_B, vec![PATH_C.to_path_buf()]));
+        manager.create_asset_task(simple_node(*PATH_C, vec![PATH_A.to_path_buf()]));
+
+        manager.on_file_ready(&mut (), file_ok(*PATH_C)).unwrap();
+        manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
+        manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
     }
 
     mod test_lib {
