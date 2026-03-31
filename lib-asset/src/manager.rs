@@ -8,9 +8,9 @@ use mimiq::image;
 use mimiq::{FileReady, FsServer};
 
 use anyhow::Context;
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 use hecs::{BuiltEntityClone, EntityBuilderClone};
-use tracing::instrument;
+use tracing::{instrument, warn};
 
 const TARGET_NAME: &str = "asset_manager";
 
@@ -27,7 +27,7 @@ pub struct AssetManager<T> {
     prefab_factory: Rc<PrefabFactory<T>>,
     fs_server: Rc<dyn FsServer>,
     nodes: HashMap<Rc<Path>, AssetNode<T>>,
-    dependents: HashMap<Rc<Path>, Vec<Rc<Path>>>,
+    dependents: HashMap<Rc<Path>, HashSet<Rc<Path>>>,
     queue: VecDeque<Rc<Path>>,
 }
 
@@ -44,8 +44,8 @@ impl<T: 'static> AssetManager<T> {
     }
 
     #[cfg(feature = "dbg")]
-    pub fn iter_node_dependents(&self) -> impl Iterator<Item = (&Path, &[Rc<Path>])> {
-        self.dependents.iter().map(|(k, v)| (&**k, v.as_slice()))
+    pub fn iter_node_dependents(&self) -> impl Iterator<Item = (&Path, &HashSet<Rc<Path>>)> {
+        self.dependents.iter().map(|(k, v)| (&**k, v))
     }
 
     #[cfg(feature = "dbg")]
@@ -93,7 +93,7 @@ impl<T: 'static> AssetManager<T> {
                 Ok(())
             }),
         );
-        self.create_asset_task(path, node);
+        self.create_asset_task(node);
     }
 
     pub fn load_image(
@@ -114,10 +114,11 @@ impl<T: 'static> AssetManager<T> {
                 Ok(())
             }),
         );
-        self.create_asset_task(path, node);
+        self.create_asset_task(node);
     }
 
-    fn create_asset_task(&mut self, path: Rc<Path>, node: AssetNode<T>) {
+    fn create_asset_task(&mut self, node: AssetNode<T>) {
+        let path = node.src.clone();
         if self.nodes.contains_key(&path) {
             tracing::debug!(?path, "Will not queue. Already have a node");
             return;
@@ -159,7 +160,10 @@ impl<T: 'static> AssetManager<T> {
 
     fn node_file_ready(&mut self, event: FileReady) -> anyhow::Result<Option<Rc<Path>>> {
         let asset_path = Rc::<Path>::from(event.path);
-        let mut node = self.nodes.remove(&asset_path).unwrap();
+        let Some(mut node) = self.nodes.remove(&asset_path) else {
+            warn!("no such node: {asset_path:?}");
+            return Ok(None);
+        };
         let data = event
             .bytes_result
             .with_context(|| format!("load_file({asset_path:?})"))?;
@@ -173,7 +177,7 @@ impl<T: 'static> AssetManager<T> {
             self.dependents
                 .entry(path.into())
                 .or_default()
-                .push(asset_path.clone());
+                .insert(asset_path.clone());
         }
 
         Ok(already_ready.then(|| asset_path.clone()))
