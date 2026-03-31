@@ -98,7 +98,11 @@ pub struct App {
 }
 
 impl mimiq::EventHandler<AppInit> for App {
-    fn init(gl_ctx: Rc<mimiq::GlContext>, fs_server: mimiq::FsServerHandle, init: AppInit) -> Self {
+    fn init(
+        gl_ctx: Rc<mimiq::GlContext>,
+        fs_server: Rc<dyn mimiq::FsServer>,
+        init: AppInit,
+    ) -> Self {
         let resources = Resources::new(gl_ctx);
 
         let mut prefab_factory = init.prefab_factory;

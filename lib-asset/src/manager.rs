@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use crate::{FsResolver, PrefabFactory};
 use mimiq::image;
-use mimiq::{FileReady, FsServerHandle};
+use mimiq::{FileReady, FsServer};
 
 use anyhow::Context;
 use hashbrown::HashMap;
@@ -24,14 +24,14 @@ pub struct AssetNodeDebug<'a> {
 pub struct AssetManager<T> {
     pub fs_resolver: FsResolver,
     prefab_factory: Rc<PrefabFactory<T>>,
-    fs_server: FsServerHandle,
+    fs_server: Rc<dyn FsServer>,
     nodes: HashMap<Rc<Path>, AssetNode<T>>,
     dependents: HashMap<Rc<Path>, Vec<Rc<Path>>>,
     queue: VecDeque<Rc<Path>>,
 }
 
 impl<T: 'static> AssetManager<T> {
-    pub fn new(fs_server: FsServerHandle, prefab_factory: PrefabFactory<T>) -> Self {
+    pub fn new(fs_server: Rc<dyn FsServer>, prefab_factory: PrefabFactory<T>) -> Self {
         AssetManager {
             fs_server,
             prefab_factory: Rc::new(prefab_factory),
