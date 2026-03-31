@@ -916,6 +916,7 @@ dependencies = [
  "serde_json",
  "slab",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

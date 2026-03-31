@@ -303,3 +303,112 @@ impl<T> fmt::Debug for AssetNodeState<T> {
 
 type OnBytesReady = Box<dyn FnOnce(&[u8]) -> anyhow::Result<Vec<PathBuf>>>;
 type OnDepsReady<T> = Box<dyn FnOnce(&mut T, &FsResolver, Vec<u8>) -> anyhow::Result<()>>;
+
+#[cfg(test)]
+mod tests {
+    use super::AssetNodeState;
+    use std::{path::Path, sync::LazyLock};
+    use test_lib::*;
+
+    static PATH_A: LazyLock<&Path> = LazyLock::new(|| Path::new("A"));
+    static PATH_B: LazyLock<&Path> = LazyLock::new(|| Path::new("B"));
+
+    #[test]
+    fn simple_upload() {
+        init_test_logger();
+        let mut manager = make_manager();
+
+        manager.create_asset_task(simple_node(*PATH_A, vec![]));
+        manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
+        assert!(manager.nodes[*PATH_A].state.is_initialized());
+    }
+
+    #[test]
+    fn simple_upload_err() {
+        init_test_logger();
+        let mut manager = make_manager();
+
+        manager.create_asset_task(simple_node(*PATH_A, vec![]));
+        manager
+            .on_file_ready(&mut (), file_err(*PATH_A))
+            .unwrap_err();
+        assert!(!manager.nodes.contains_key(*PATH_A));
+    }
+
+    #[test]
+    fn simple_upload_with_deps() {
+        init_test_logger();
+        let mut manager = make_manager();
+
+        manager.create_asset_task(simple_node(*PATH_A, vec![PATH_B.to_path_buf()]));
+        manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
+        assert!(manager.nodes.contains_key(*PATH_A));
+        assert!(manager.dependents.contains_key(*PATH_B));
+        assert!(matches!(
+            manager.nodes[*PATH_A].state,
+            AssetNodeState::BytesReady { .. }
+        ));
+
+        manager.create_asset_task(simple_node(*PATH_B, vec![]));
+        manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
+        assert!(manager.nodes[*PATH_A].state.is_initialized());
+    }
+
+    mod test_lib {
+        use std::cell::RefCell;
+        use std::io;
+        use std::path::{Path, PathBuf};
+        use std::rc::Rc;
+
+        use hashbrown::HashSet;
+        use mimiq::{FileReady, FsServer};
+        use tracing::Level;
+
+        use crate::manager::{AssetManager, AssetNode};
+        use crate::prefab::PrefabFactory;
+
+        pub fn make_manager() -> AssetManager<()> {
+            let server = Rc::new(TrackingFsServer { requests: RefCell::new(HashSet::new()) });
+            AssetManager::new(server, PrefabFactory::new())
+        }
+
+        struct TrackingFsServer {
+            requests: RefCell<HashSet<PathBuf>>,
+        }
+
+        impl FsServer for TrackingFsServer {
+            fn load_file(&self, path: &Path) {
+                let new = self.requests.borrow_mut().insert(path.to_path_buf());
+                assert!(new, "duplicate request for {path:?}");
+            }
+        }
+
+        pub fn simple_node(path: &Path, deps: Vec<PathBuf>) -> AssetNode<()> {
+            AssetNode::new(
+                path.into(),
+                "test_node",
+                Box::new(move |_| Ok(deps)),
+                Box::new(|_, _, _| Ok(())),
+            )
+        }
+
+        pub fn file_ok(path: &Path) -> FileReady {
+            FileReady { path: path.to_path_buf(), bytes_result: Ok(Vec::new()) }
+        }
+
+        pub fn file_err(path: &Path) -> FileReady {
+            FileReady {
+                path: path.to_path_buf(),
+                bytes_result: Err(io::Error::other("test error")),
+            }
+        }
+
+        pub fn init_test_logger() {
+            // Tests run in parallel, so some might have already created the logger.
+            let _ = tracing_subscriber::fmt()
+                .with_level(true)
+                .with_max_level(Level::DEBUG)
+                .try_init();
+        }
+    }
+}
