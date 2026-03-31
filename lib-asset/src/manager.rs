@@ -126,7 +126,7 @@ impl<T: 'static> AssetManager<T> {
         self.fs_server.load_file(&path);
     }
 
-    pub fn on_file_ready(&mut self, ctx: &mut T, event: FileReady) {
+    pub fn on_file_ready(&mut self, ctx: &mut T, event: FileReady) -> anyhow::Result<()> {
         let _span = tracing::info_span!(
             target: TARGET_NAME,
             "on_file_ready",
@@ -134,8 +134,8 @@ impl<T: 'static> AssetManager<T> {
         )
         .entered();
 
-        let Some(start) = self.node_file_ready(event) else {
-            return;
+        let Some(start) = self.node_file_ready(event)? else {
+            return Ok(());
         };
 
         self.queue.push_back(start);
@@ -144,7 +144,7 @@ impl<T: 'static> AssetManager<T> {
                 .nodes
                 .remove(&asset)
                 .expect("BUG: traversed to a non-existent node");
-            node = node.dependency_ready(&self.fs_resolver, ctx);
+            node = node.dependency_ready(&self.fs_resolver, ctx)?;
             let ready = node.state.is_initialized();
             self.nodes.insert(asset.clone(), node);
 
@@ -158,23 +158,19 @@ impl<T: 'static> AssetManager<T> {
             };
             self.queue.extend(tonotify.iter().cloned());
         }
+
+        Ok(())
     }
 
-    fn node_file_ready(&mut self, event: FileReady) -> Option<Rc<Path>> {
+    fn node_file_ready(&mut self, event: FileReady) -> anyhow::Result<Option<Rc<Path>>> {
         let asset_path = Rc::<Path>::from(event.path);
         let mut node = self.nodes.remove(&asset_path).unwrap();
-        let data = match event.bytes_result {
-            Ok(x) => x,
-            Err(err) => {
-                tracing::error!(path=?asset_path, "fs error: {err:#}");
-                self.nodes.insert(asset_path, node.fail());
-                return None;
-            }
-        };
-
+        let data = event
+            .bytes_result
+            .with_context(|| format!("load_file({asset_path:?})"))?;
         let deps: Vec<PathBuf>;
         let already_ready: bool;
-        (deps, already_ready, node) = node.bytes_ready(&self.nodes, data);
+        (deps, already_ready, node) = node.bytes_ready(&self.nodes, data)?;
         tracing::debug!(target: TARGET_NAME, deps=?deps, path=?asset_path, state=?node.state, "bytes parsed");
         self.nodes.insert(asset_path.clone(), node);
 
@@ -185,7 +181,7 @@ impl<T: 'static> AssetManager<T> {
                 .push(asset_path.clone());
         }
 
-        already_ready.then(|| asset_path.clone())
+        Ok(already_ready.then(|| asset_path.clone()))
     }
 }
 
@@ -202,7 +198,6 @@ impl<T> AssetNode<T> {
             AssetNodeState::PendingFsRequest { .. } => ("PendingFs", 0),
             AssetNodeState::BytesReady { deps_not_loaded, .. } => ("BytesReady", deps_not_loaded),
             AssetNodeState::Initialized => ("Initialized", 0),
-            AssetNodeState::Failed => ("Failed", 0),
         };
         AssetNodeDebug { path: &*self.src, ty: self.ty, state, deps_not_loaded }
     }
@@ -217,11 +212,7 @@ impl<T> AssetNode<T> {
         AssetNode { src, ty, state }
     }
 
-    fn fail(self) -> Self {
-        AssetNode { state: AssetNodeState::Failed, ..self }
-    }
-
-    fn dependency_ready(self, fs_resolver: &FsResolver, ctx: &mut T) -> Self {
+    fn dependency_ready(self, fs_resolver: &FsResolver, ctx: &mut T) -> anyhow::Result<Self> {
         let _span = tracing::info_span!(
             target: TARGET_NAME,
             "dependency_ready",
@@ -230,16 +221,19 @@ impl<T> AssetNode<T> {
         )
         .entered();
 
-        let state = self.state.dependency_ready(fs_resolver, ctx);
+        let state = self
+            .state
+            .dependency_ready(fs_resolver, ctx)
+            .with_context(|| format!("dependency_ready({:?})", self.src))?;
         tracing::debug!(?state, "ack");
-        AssetNode { state, ..self }
+        Ok(AssetNode { state, ..self })
     }
 
     fn bytes_ready(
         self,
         others: &HashMap<Rc<Path>, AssetNode<T>>,
         data: Vec<u8>,
-    ) -> (Vec<PathBuf>, bool, Self) {
+    ) -> anyhow::Result<(Vec<PathBuf>, bool, Self)> {
         let _span = tracing::info_span!(
             target: TARGET_NAME,
             "bytes_ready",
@@ -248,8 +242,11 @@ impl<T> AssetNode<T> {
         )
         .entered();
 
-        let (deps, all_deps_ready, state) = self.state.bytes_ready(others, data);
-        (deps, all_deps_ready, AssetNode { state, ..self })
+        let (deps, all_deps_ready, state) = self
+            .state
+            .bytes_ready(others, data)
+            .with_context(|| format!("bytes_read({:?})", self.src))?;
+        Ok((deps, all_deps_ready, AssetNode { state, ..self }))
     }
 }
 
@@ -257,77 +254,53 @@ enum AssetNodeState<T> {
     PendingFsRequest { on_bytes_ready: OnBytesReady, on_deps_ready: OnDepsReady<T> },
     BytesReady { data: Vec<u8>, deps_not_loaded: usize, on_deps_ready: OnDepsReady<T> },
     Initialized,
-    Failed,
 }
 
 impl<T> AssetNodeState<T> {
-    fn dependency_ready(self, fs_resolver: &FsResolver, ctx: &mut T) -> Self {
+    fn dependency_ready(self, fs_resolver: &FsResolver, ctx: &mut T) -> anyhow::Result<Self> {
         let AssetNodeState::BytesReady { data, deps_not_loaded, on_deps_ready } = self else {
             tracing::warn!("not waiting for deps");
-            return self;
+            return Ok(self);
         };
 
-        if deps_not_loaded > 1 {
-            return AssetNodeState::BytesReady {
-                deps_not_loaded: deps_not_loaded - 1,
-                data,
-                on_deps_ready,
-            };
-        }
-
-        match on_deps_ready(ctx, fs_resolver, data) {
-            Ok(_) => AssetNodeState::Initialized,
-            Err(err) => {
-                tracing::error!("failed: {err:#}");
-                AssetNodeState::Failed
-            }
-        }
+        let new_state = if deps_not_loaded > 1 {
+            AssetNodeState::BytesReady { deps_not_loaded: deps_not_loaded - 1, data, on_deps_ready }
+        } else {
+            on_deps_ready(ctx, fs_resolver, data)?;
+            AssetNodeState::Initialized
+        };
+        Ok(new_state)
     }
 
     fn bytes_ready(
         self,
         others: &HashMap<Rc<Path>, AssetNode<T>>,
         data: Vec<u8>,
-    ) -> (Vec<PathBuf>, bool, Self) {
+    ) -> anyhow::Result<(Vec<PathBuf>, bool, Self)> {
         let AssetNodeState::PendingFsRequest { on_bytes_ready, on_deps_ready } = self else {
             tracing::warn!("not wating for bytes");
-            return (Vec::new(), false, AssetNodeState::Failed);
+            return Ok((Vec::new(), false, self));
         };
-        let deps = match on_bytes_ready(&data) {
-            Ok(deps) => deps,
-            Err(err) => {
-                tracing::error!("failed: {err:#}");
-                return (Vec::new(), false, AssetNodeState::Failed);
-            }
-        };
-
+        let deps = on_bytes_ready(&data)?;
         let deps_not_loaded = deps
             .iter()
             .filter(|dep| {
                 others
                     .get(dep.as_path())
-                    .map(|x| !x.state.is_terminal())
+                    .map(|x| !x.state.is_initialized())
                     .unwrap_or(true)
             })
             .count();
-        (
+        Ok((
             deps,
             deps_not_loaded == 0,
             AssetNodeState::BytesReady { data, deps_not_loaded, on_deps_ready },
-        )
-    }
-
-    fn is_terminal(&self) -> bool {
-        matches!(self, AssetNodeState::Failed | AssetNodeState::Initialized)
+        ))
     }
 
     fn is_initialized(&self) -> bool {
         matches!(self, AssetNodeState::Initialized)
     }
-
-    // fn is_failed(&self) -> bool {
-    //     matches!(self, AssetNodeState::Failed)
-    // }
 }
 
 impl<T> fmt::Debug for AssetNodeState<T> {
@@ -339,7 +312,6 @@ impl<T> fmt::Debug for AssetNodeState<T> {
                 .field("deps_left", deps_not_loaded)
                 .finish(),
             Self::Initialized => write!(f, "Initialized"),
-            Self::Failed => write!(f, "Failed"),
         }
     }
 }

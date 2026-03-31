@@ -126,7 +126,9 @@ impl mimiq::EventHandler<AppInit> for App {
     }
 
     fn file_ready(&mut self, event: mimiq::FileReady) {
-        self.asset_manager.on_file_ready(&mut self.resources, event);
+        if let Err(e) = self.asset_manager.on_file_ready(&mut self.resources, event) {
+            error!("asset manager errored: {e:#}");
+        }
         self.queue_assets(
             self.asset_manager
                 .iter_assets_to_load()
