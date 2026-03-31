@@ -1035,10 +1035,9 @@ dependencies = [
 
 [[package]]
 name = "mimiq"
-version = "0.4.5"
-source = "git+https://github.com/InnocentusLime/miniquad?tag=v0.4.5#0c31a718ea3a8fd6c3deaa7c7cafd0f7cd2961f4"
+version = "0.5.0"
+source = "git+https://github.com/InnocentusLime/miniquad?tag=v0.5.0#6c0cfe9996f331ab7ad87400bc979d91aa2949c7"
 dependencies = [
- "anyhow",
  "bytemuck",
  "console_error_panic_hook",
  "egui",
