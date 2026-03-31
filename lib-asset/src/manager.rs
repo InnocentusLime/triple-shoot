@@ -10,6 +10,7 @@ use mimiq::{FileReady, FsServer};
 use anyhow::Context;
 use hashbrown::HashMap;
 use hecs::{BuiltEntityClone, EntityBuilderClone};
+use tracing::instrument;
 
 const TARGET_NAME: &str = "asset_manager";
 
@@ -126,14 +127,8 @@ impl<T: 'static> AssetManager<T> {
         self.fs_server.load_file(&path);
     }
 
+    #[instrument(target=TARGET_NAME, skip_all, fields(path=?event.path))]
     pub fn on_file_ready(&mut self, ctx: &mut T, event: FileReady) -> anyhow::Result<()> {
-        let _span = tracing::info_span!(
-            target: TARGET_NAME,
-            "on_file_ready",
-            path=?event.path,
-        )
-        .entered();
-
         let Some(start) = self.node_file_ready(event)? else {
             return Ok(());
         };
@@ -212,15 +207,8 @@ impl<T> AssetNode<T> {
         AssetNode { src, ty, state }
     }
 
+    #[instrument(target=TARGET_NAME, skip_all, fields(path=?self.src, ty=self.ty))]
     fn dependency_ready(self, fs_resolver: &FsResolver, ctx: &mut T) -> anyhow::Result<Self> {
-        let _span = tracing::info_span!(
-            target: TARGET_NAME,
-            "dependency_ready",
-            path=?self.src,
-            ty=self.ty,
-        )
-        .entered();
-
         let state = self
             .state
             .dependency_ready(fs_resolver, ctx)
@@ -229,19 +217,12 @@ impl<T> AssetNode<T> {
         Ok(AssetNode { state, ..self })
     }
 
+    #[instrument(target=TARGET_NAME, skip_all, fields(path=?self.src, ty=self.ty))]
     fn bytes_ready(
         self,
         others: &HashMap<Rc<Path>, AssetNode<T>>,
         data: Vec<u8>,
     ) -> anyhow::Result<(Vec<PathBuf>, bool, Self)> {
-        let _span = tracing::info_span!(
-            target: TARGET_NAME,
-            "bytes_ready",
-            path=?self.src,
-            ty=self.ty,
-        )
-        .entered();
-
         let (deps, all_deps_ready, state) = self
             .state
             .bytes_ready(others, data)
