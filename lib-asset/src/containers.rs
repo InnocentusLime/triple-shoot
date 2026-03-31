@@ -74,3 +74,30 @@ impl<T> Default for AssetContainer<T> {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use crate::containers::AssetContainer;
+
+    #[test]
+    fn new_empty() {
+        let len = AssetContainer::<()>::new().iter().count();
+        assert_eq!(len, 0);
+    }
+
+    #[test]
+    fn insert() {
+        let path = Path::new("A");
+        let mut container = AssetContainer::<()>::new();
+
+        let key = container.insert(path, ());
+        container.get(key).unwrap();
+        assert_eq!(container.inverse_resolve(key), path);
+        assert_eq!(container.resolve(path), Some(key));
+
+        let entries = container.iter().collect::<Vec<_>>();
+        assert_eq!(entries.as_slice(), &[(path, key)]);
+    }
+}
