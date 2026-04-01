@@ -77,16 +77,41 @@ impl State for MainGame {
         }
         std::mem::drop(query);
 
-        for (_, (tf, kin, ai)) in resources
+        let mut query = resources
             .world
-            .query_mut::<(&mut Transform, &mut KinematicControl, &NpcAi)>()
-        {
+            .query::<(&Transform, &mut KinematicControl, &NpcAi)>();
+        for (this, (tf, kin, ai)) in &mut query {
             match ai {
                 NpcAi::JustFollowPlayer => {
-                    let dr = player_pos - tf.pos;
-                    kin.dr = 24.0 * dt * dr.normalize_or_zero();
+                    let walk_dir = (player_pos - tf.pos).normalize_or_zero();
+                    let steer_dir = steer_dir(&resources.world, this, tf.pos);
+                    let move_dir = (0.4 * walk_dir + 0.8 * steer_dir).normalize_or_zero();
+
+                    kin.dr = (24.0 * dt) * move_dir;
                 }
             }
         }
     }
+}
+
+fn steer_dir(world: &World, this: Entity, pos: Vec2) -> Vec2 {
+    const SEPARATION_RADIUS: f32 = 20.0;
+
+    let mut result = Vec2::ZERO;
+    for (other, (tf, team)) in &mut world.query::<(&Transform, &Team)>() {
+        if *team != Team::Enemy {
+            continue;
+        }
+        if other == this {
+            continue;
+        }
+
+        let dr = pos - tf.pos;
+        let dist = dr.length();
+        if dist < SEPARATION_RADIUS {
+            result += dr.normalize_or_zero();
+        }
+    }
+
+    result.normalize_or_zero()
 }
