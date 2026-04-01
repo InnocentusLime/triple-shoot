@@ -23,6 +23,13 @@ impl<T> PrefabFactory<T> {
         self.register::<B>(
             key,
             |_, builder, x| {
+                for id in builder.component_types() {
+                    // NOTE: using implementation details. Not good.
+                    if x.with_ids(|types| types.contains(&id)) {
+                        anyhow::bail!("component already inserted")
+                    }
+                }
+
                 builder.add_bundle(x);
                 Ok(())
             },
@@ -34,8 +41,12 @@ impl<T> PrefabFactory<T> {
         self.register::<C>(
             key,
             |_, builder, x| {
-                builder.add(x);
-                Ok(())
+                if builder.has::<C>() {
+                    anyhow::bail!("component already inserted")
+                } else {
+                    builder.add(x);
+                    Ok(())
+                }
             },
             |_| Ok(Vec::new()),
         );
@@ -50,8 +61,12 @@ impl<T> PrefabFactory<T> {
         self.register::<Seed>(
             key,
             move |ctx, builder, x| {
-                builder.add(constructor(x, ctx)?);
-                Ok(())
+                if builder.has::<C>() {
+                    anyhow::bail!("component already inserted")
+                } else {
+                    builder.add(constructor(x, ctx)?);
+                    Ok(())
+                }
             },
             deps,
         );
@@ -64,9 +79,13 @@ impl<T> PrefabFactory<T> {
     ) {
         self.register::<Seed>(
             key,
-            move |_, builder: &mut EntityBuilderClone, x: Seed| {
-                builder.add(constructor(x));
-                Ok(())
+            move |_, builder, x| {
+                if builder.has::<C>() {
+                    anyhow::bail!("component already inserted")
+                } else {
+                    builder.add(constructor(x));
+                    Ok(())
+                }
             },
             |_| Ok(Vec::new()),
         );
@@ -227,6 +246,27 @@ mod tests {
         assert_eq!(prefab.get::<&B>().expect("No component").0, 3);
         assert_eq!(prefab.get::<&C>().expect("No component").0, 1);
         assert_eq!(prefab.get::<&C>().expect("No component").1, 2);
+    }
+
+    #[test]
+    fn duplicate() {
+        build_from_json_failing(
+            r#"{
+  "ac": {
+    "a": null,
+    "c": [1,2]
+  },
+  "a": null
+}"#,
+        );
+    }
+
+    fn build_from_json_failing(s: &str) {
+        let fac = make_factory();
+        let mut prefab = EntityBuilderClone::new();
+        let preprefab = serde_json::from_str(s).expect("parse");
+        fac.build(&mut (), &mut prefab, &preprefab)
+            .expect_err("build");
     }
 
     fn build_from_json(s: &str) -> EntityBuilderClone {
