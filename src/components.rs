@@ -10,6 +10,12 @@ pub fn register_components(prefab_factory: &mut lib_game::PrefabFactory<Resource
         PlayerArsenalManifest::into_tag,
         PlayerArsenalManifest::dependencies,
     );
+    prefab_factory.register_component::<NpcAi>("npc");
+}
+
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
+pub enum NpcAi {
+    JustFollowPlayer,
 }
 
 #[derive(Debug, Clone, Copy)]
