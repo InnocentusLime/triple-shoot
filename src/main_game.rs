@@ -61,7 +61,7 @@ impl State for MainGame {
             .world
             .query::<(&mut Transform, &mut KinematicControl, &PlayerArsenal)>();
         for (_, (tf, kin, arsenal)) in &mut query {
-            kin.dr = 13.0 * dt * input_model.player_move_direction;
+            kin.dr = 32.0 * dt * input_model.player_move_direction;
             let pos = tf.pos + 32.0 * input_model.player_aim_direction;
             player_pos = tf.pos;
 
@@ -84,7 +84,7 @@ impl State for MainGame {
             match ai {
                 NpcAi::JustFollowPlayer => {
                     let dr = player_pos - tf.pos;
-                    kin.dr = 8.0 * dt * dr.normalize_or_zero();
+                    kin.dr = 24.0 * dt * dr.normalize_or_zero();
                 }
             }
         }
