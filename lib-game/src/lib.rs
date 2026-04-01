@@ -209,6 +209,7 @@ impl App {
 
         self.col_solver
             .compute_collisions(&mut self.resources.world);
+        hp::get_damaged(&mut self.resources.world, &self.col_solver);
         projectile::impact(&mut self.resources.world, &self.col_solver, &mut self.cmds);
         hp::despawn_on_low_hp(&mut self.resources.world, &mut self.cmds);
 

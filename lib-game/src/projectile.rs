@@ -20,16 +20,12 @@ pub fn impact(world: &mut World, collisions: &CollisionSolver, cmds: &mut Comman
 
         let mut collided = false;
         for collide_with in collisions.collisions_for(col_q) {
-            let Ok(mut query) = world.query_one::<(&Team, &mut Hp)>(*collide_with) else {
-                continue;
-            };
-            let Some((collided_team, hp)) = query.get() else {
+            let Ok(collided_team) = world.get::<&Team>(*collide_with) else {
                 continue;
             };
             if *collided_team == *projectile_team {
                 continue;
             }
-            hp.damage(1);
             collided = true;
         }
 
