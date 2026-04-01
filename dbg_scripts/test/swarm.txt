@@ -1,0 +1,7 @@
+spawn player 64 64
+spawn test/dumemy 256 64
+spawn test/dumemy 230 32
+spawn test/dumemy 128 16
+spawn test/dumemy 64 256
+spawn test/dumemy 256 256
+spawn test/dumemy 256 128
