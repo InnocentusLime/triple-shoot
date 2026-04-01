@@ -85,14 +85,25 @@ impl Render {
     }
 
     pub fn buffer_sprites(&mut self, world: &mut World) {
-        for (_, (tf, sprite)) in world.query_mut::<(&Transform, &Sprite)>() {
+        const FLICKER_INTERVAL: f32 = 0.1;
+
+        for (_, (tf, sprite, hp)) in world.query_mut::<(&Transform, &Sprite, Option<&Hp>)>() {
             let transform = Affine2::from_angle_translation(tf.angle, tf.pos);
+            let mut color = sprite.color;
+            if let Some(hp) = hp
+                && hp.cooling_down()
+            {
+                let interval = hp.cooldown.div_euclid(FLICKER_INTERVAL) as u32;
+                if interval % 2 == 0 {
+                    color.a = 0.0;
+                }
+            }
 
             self.curr_texture = sprite.texture;
             self.sprite_batcher.add_sprite(mimiq::util::Sprite {
                 tex_rect_pos: sprite.tex_rect_pos,
                 tex_rect_size: sprite.tex_rect_size,
-                color: sprite.color,
+                color,
                 transform,
             });
         }

@@ -29,7 +29,7 @@ pub fn impact(world: &mut World, collisions: &CollisionSolver, cmds: &mut Comman
             if *collided_team == *projectile_team {
                 continue;
             }
-            hp.hp -= 1;
+            hp.damage(1);
             collided = true;
         }
 

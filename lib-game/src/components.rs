@@ -3,6 +3,8 @@ pub use crate::render::components::*;
 
 use crate::prelude::*;
 
+const COOLDOWN_LENGTH: f32 = 1.0;
+
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct PlayerTag;
 
@@ -20,11 +22,24 @@ pub enum Team {
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct Hp {
     pub hp: i32,
+    pub cooldown: f32,
 }
 
 impl Hp {
     pub fn new(hp: i32) -> Self {
-        Self { hp }
+        Self { hp, cooldown: 0.0 }
+    }
+
+    pub fn cooling_down(&self) -> bool {
+        self.cooldown > 0.0
+    }
+
+    pub fn damage(&mut self, delta: i32) {
+        if self.cooling_down() {
+            return;
+        }
+        self.hp -= delta;
+        self.cooldown = COOLDOWN_LENGTH;
     }
 }
 

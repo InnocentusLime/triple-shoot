@@ -215,6 +215,7 @@ impl App {
         let res = self
             .state
             .update(dt, &mut self.resources, &self.col_solver, &mut self.cmds);
+        hp::tick(dt, &mut self.resources.world);
         self.cmds.run_on(&mut self.resources.world);
 
         self.resources.world.flush();
