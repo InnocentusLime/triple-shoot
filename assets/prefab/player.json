@@ -22,8 +22,8 @@
         "groups": ["Characters"],
         "shape": {
             "type": "Rect",
-            "width": 64.0,
-            "height": 32.0
+            "width": 16.0,
+            "height": 16.0
         }
     }
 }
