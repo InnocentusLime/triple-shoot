@@ -141,3 +141,124 @@ type ComponentDependencies =
 type ComponentBuilder<T> = Box<
     dyn Fn(&mut T, &mut EntityBuilderClone, &serde_json::value::RawValue) -> anyhow::Result<()>,
 >;
+
+#[cfg(test)]
+mod tests {
+    use std::any::TypeId;
+
+    use hashbrown::HashSet;
+    use hecs::*;
+
+    use crate::PrefabFactory;
+
+    #[test]
+    fn empty() {
+        let prefab = build_from_json(r#"{}"#);
+        assert_eq!(prefab.component_types().count(), 0);
+    }
+
+    #[test]
+    fn single() {
+        let prefab = build_from_json(
+            r#"{
+  "a": null
+}"#,
+        );
+        assert_eq!(
+            prefab.component_types().collect::<Vec<_>>(),
+            &[TypeId::of::<A>()]
+        );
+
+        let prefab = build_from_json(
+            r#"{
+  "b": 3
+}"#,
+        );
+        assert_eq!(
+            prefab.component_types().collect::<Vec<_>>(),
+            &[TypeId::of::<B>()]
+        );
+        assert_eq!(prefab.get::<&B>().expect("No component").0, 3);
+
+        let prefab = build_from_json(
+            r#"{
+  "c": [2, 3]
+}"#,
+        );
+        assert_eq!(
+            prefab.component_types().collect::<Vec<_>>(),
+            &[TypeId::of::<C>()]
+        );
+        assert_eq!(prefab.get::<&C>().expect("No component").0, 2);
+        assert_eq!(prefab.get::<&C>().expect("No component").1, 3);
+    }
+
+    #[test]
+    fn bundle() {
+        let prefab = build_from_json(
+            r#"{
+  "ac": {
+    "a": null,
+    "c": [1,2]
+  }
+}"#,
+        );
+        assert_eq!(
+            prefab.component_types().collect::<HashSet<_>>(),
+            HashSet::from_iter([TypeId::of::<A>(), TypeId::of::<C>(),])
+        );
+    }
+
+    #[test]
+    fn multi() {
+        let prefab = build_from_json(
+            r#"{
+  "ac": {
+    "a": null,
+    "c": [1,2]
+  },
+  "b": 3
+}"#,
+        );
+        assert_eq!(
+            prefab.component_types().collect::<HashSet<_>>(),
+            HashSet::from_iter([TypeId::of::<A>(), TypeId::of::<B>(), TypeId::of::<C>(),])
+        );
+        assert_eq!(prefab.get::<&B>().expect("No component").0, 3);
+        assert_eq!(prefab.get::<&C>().expect("No component").0, 1);
+        assert_eq!(prefab.get::<&C>().expect("No component").1, 2);
+    }
+
+    fn build_from_json(s: &str) -> EntityBuilderClone {
+        let fac = make_factory();
+        let mut prefab = EntityBuilderClone::new();
+        let preprefab = serde_json::from_str(s).expect("parse");
+        fac.build(&mut (), &mut prefab, &preprefab).expect("build");
+
+        prefab
+    }
+
+    fn make_factory() -> PrefabFactory<()> {
+        let mut res = PrefabFactory::new();
+        res.register_component::<A>("a");
+        res.register_component::<C>("c");
+        res.register_component_with_constructor("b", B);
+        res.register_bundle::<BundleAC>("ac");
+        res
+    }
+
+    #[derive(Clone, Copy, serde::Deserialize)]
+    struct A;
+
+    #[derive(Clone, Copy)]
+    struct B(i32);
+
+    #[derive(Clone, Copy, serde::Deserialize)]
+    struct C(i32, i32);
+
+    #[derive(Clone, Copy, Bundle, DynamicBundleClone, serde::Deserialize)]
+    struct BundleAC {
+        a: A,
+        c: C,
+    }
+}
