@@ -9,8 +9,8 @@
         "texture": "atlas/bnuuy.png",
         "sort_offset": 0.0,
         "local_offset": [0.0, 0.0],
-        "tex_rect_pos": [32, 17],
-        "tex_rect_size": [16, 16]
+        "tex_rect_pos": [2, 29],
+        "tex_rect_size": [11, 6]
     },
     "kinematic": {
         "collision": ["Level"],
@@ -21,16 +21,16 @@
         "filter": [],
         "collider": {
             "type": "Rect",
-            "width": 64.0,
-            "height": 32.0
+            "width": 11.0,
+            "height": 6.0
         }
     },
     "body": {
         "groups": ["Attacks"],
         "shape": {
             "type": "Rect",
-            "width": 64.0,
-            "height": 32.0
+            "width": 11.0,
+            "height": 6.0
         }
     }
 }
