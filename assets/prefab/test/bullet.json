@@ -1,6 +1,6 @@
 {
     "projectile": {
-        "speed": 32.0
+        "speed": 128.0
     },
     "team": "Player",
     "transform": null,
