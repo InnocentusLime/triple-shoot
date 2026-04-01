@@ -107,7 +107,7 @@ impl<T: 'static> AssetManager<T> {
         let node = AssetNode::new(
             path.clone(),
             "image",
-            Box::new(|_| Ok(Vec::new())),
+            Box::new(|_| Ok(HashSet::new())),
             Box::new(move |ctx, res, data| {
                 let img = image::load_from_memory(&data).context("decode img")?;
                 callback(ctx, res, img, &path_borrow);
@@ -167,7 +167,7 @@ impl<T: 'static> AssetManager<T> {
         let data = event
             .bytes_result
             .with_context(|| format!("load_file({asset_path:?})"))?;
-        let deps: Vec<PathBuf>;
+        let deps: HashSet<PathBuf>;
         let already_ready: bool;
         (deps, already_ready, node) = node.bytes_ready(&self.nodes, data)?;
         tracing::debug!(target: TARGET_NAME, deps=?deps, path=?asset_path, state=?node.state, "bytes parsed");
@@ -226,7 +226,7 @@ impl<T> AssetNode<T> {
         self,
         others: &HashMap<Rc<Path>, AssetNode<T>>,
         data: Vec<u8>,
-    ) -> anyhow::Result<(Vec<PathBuf>, bool, Self)> {
+    ) -> anyhow::Result<(HashSet<PathBuf>, bool, Self)> {
         let (deps, all_deps_ready, state) = self
             .state
             .bytes_ready(others, data)
@@ -261,10 +261,10 @@ impl<T> AssetNodeState<T> {
         self,
         others: &HashMap<Rc<Path>, AssetNode<T>>,
         data: Vec<u8>,
-    ) -> anyhow::Result<(Vec<PathBuf>, bool, Self)> {
+    ) -> anyhow::Result<(HashSet<PathBuf>, bool, Self)> {
         let AssetNodeState::PendingFsRequest { on_bytes_ready, on_deps_ready } = self else {
             tracing::warn!("not wating for bytes");
-            return Ok((Vec::new(), false, self));
+            return Ok((HashSet::new(), false, self));
         };
         let deps = on_bytes_ready(&data)?;
         let deps_not_loaded = deps
@@ -301,7 +301,7 @@ impl<T> fmt::Debug for AssetNodeState<T> {
     }
 }
 
-type OnBytesReady = Box<dyn FnOnce(&[u8]) -> anyhow::Result<Vec<PathBuf>>>;
+type OnBytesReady = Box<dyn FnOnce(&[u8]) -> anyhow::Result<HashSet<PathBuf>>>;
 type OnDepsReady<T> = Box<dyn FnOnce(&mut T, &FsResolver, Vec<u8>) -> anyhow::Result<()>>;
 
 #[cfg(test)]
@@ -475,6 +475,28 @@ mod tests {
         manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
     }
 
+    #[test]
+    fn simple_upload_with_deps_dup() {
+        init_test_logger();
+        let mut manager = make_manager();
+
+        manager.create_asset_task(simple_node(
+            *PATH_A,
+            vec![PATH_B.to_path_buf(), PATH_B.to_path_buf()],
+        ));
+        manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
+        assert!(manager.nodes.contains_key(*PATH_A));
+        assert!(manager.dependents.contains_key(*PATH_B));
+        assert!(matches!(
+            manager.nodes[*PATH_A].state,
+            AssetNodeState::BytesReady { .. }
+        ));
+
+        manager.create_asset_task(simple_node(*PATH_B, vec![]));
+        manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
+        assert!(manager.nodes[*PATH_A].state.is_initialized());
+    }
+
     mod test_lib {
         use std::cell::RefCell;
         use std::io;
@@ -508,7 +530,7 @@ mod tests {
             AssetNode::new(
                 path.into(),
                 "test_node",
-                Box::new(move |_| Ok(deps)),
+                Box::new(move |_| Ok(HashSet::from_iter(deps))),
                 Box::new(|_, _, _| Ok(())),
             )
         }

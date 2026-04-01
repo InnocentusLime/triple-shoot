@@ -1,7 +1,7 @@
 use std::{marker::PhantomData, path::PathBuf};
 
 use anyhow::Context;
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 use hecs::{Component, DynamicBundleClone, EntityBuilderClone};
 use serde::{Deserialize, de::DeserializeOwned};
 
@@ -113,8 +113,8 @@ impl<T> PrefabFactory<T> {
         self.registry.insert(key.to_string(), entry);
     }
 
-    pub fn list_deps(&self, pref: &PrePrefab) -> anyhow::Result<Vec<PathBuf>> {
-        let mut result = Vec::new();
+    pub fn list_deps(&self, pref: &PrePrefab) -> anyhow::Result<HashSet<PathBuf>> {
+        let mut result = HashSet::new();
         for (name, value) in pref.0.iter() {
             let Some(entry) = self.registry.get(*name) else {
                 anyhow::bail!("unknown component: {name:?}");
