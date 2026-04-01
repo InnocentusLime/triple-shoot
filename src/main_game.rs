@@ -56,12 +56,14 @@ impl State for MainGame {
         resources: &mut Resources,
         cmds: &mut CommandBuffer,
     ) {
+        let mut player_pos = Vec2::ZERO;
         let mut query = resources
             .world
             .query::<(&mut Transform, &mut KinematicControl, &PlayerArsenal)>();
         for (_, (tf, kin, arsenal)) in &mut query {
             kin.dr = 13.0 * dt * input_model.player_move_direction;
             let pos = tf.pos + 32.0 * input_model.player_aim_direction;
+            player_pos = tf.pos;
 
             if input_model.shoot_pressed {
                 info!("shoot");
@@ -71,6 +73,19 @@ impl State for MainGame {
                     arsenal.bullet_prefab,
                     Transform { pos, angle: input_model.player_aim_direction.to_angle() },
                 );
+            }
+        }
+        std::mem::drop(query);
+
+        for (_, (tf, kin, ai)) in resources
+            .world
+            .query_mut::<(&mut Transform, &mut KinematicControl, &NpcAi)>()
+        {
+            match ai {
+                NpcAi::JustFollowPlayer => {
+                    let dr = player_pos - tf.pos;
+                    kin.dr = 8.0 * dt * dr.normalize_or_zero();
+                }
             }
         }
     }

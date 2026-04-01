@@ -1,0 +1,2 @@
+spawn player 64 64
+spawn test/dumemy 256 64
