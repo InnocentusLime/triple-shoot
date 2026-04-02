@@ -9,67 +9,69 @@ use serde::{Deserialize, de::DeserializeOwned};
 #[serde(transparent)]
 pub struct PrePrefab<'a>(#[serde(borrow)] pub HashMap<&'a str, &'a serde_json::value::RawValue>);
 
+pub trait DeserializeWithManifestCtx<T>: Sized + 'static {
+    type Manifest<'a>: Deserialize<'a>;
+
+    fn from_manifest(ctx: &mut T, manifest: Self::Manifest<'_>) -> anyhow::Result<Self>;
+    fn deps(manifest: Self::Manifest<'_>) -> Vec<PathBuf>;
+}
+
 pub struct PrefabFactory<T> {
     registry: HashMap<String, ComponentEntry<T>>,
     _phantom: PhantomData<fn(&mut T)>,
 }
 
-impl<T> PrefabFactory<T> {
+impl<T: 'static> PrefabFactory<T> {
     pub fn new() -> Self {
         PrefabFactory { registry: HashMap::new(), _phantom: PhantomData }
     }
 
     pub fn register_bundle<B: DeserializeOwned + Clone + DynamicBundleClone>(&mut self, key: &str) {
-        self.register::<B>(
-            key,
-            |_, builder, x| {
-                for id in builder.component_types() {
-                    // NOTE: using implementation details. Not good.
-                    if x.with_ids(|types| types.contains(&id)) {
-                        anyhow::bail!("component already inserted")
-                    }
+        self.register_no_dpeps::<B>(key, |_, builder, x| {
+            for id in builder.component_types() {
+                // NOTE: using implementation details. Not good.
+                if x.with_ids(|types| types.contains(&id)) {
+                    anyhow::bail!("component already inserted")
                 }
+            }
 
-                builder.add_bundle(x);
-                Ok(())
-            },
-            |_| Ok(Vec::new()),
-        );
+            builder.add_bundle(x);
+            Ok(())
+        });
     }
 
     pub fn register_component<C: DeserializeOwned + Clone + Component>(&mut self, key: &str) {
-        self.register::<C>(
-            key,
-            |_, builder, x| {
-                if builder.has::<C>() {
-                    anyhow::bail!("component already inserted")
-                } else {
-                    builder.add(x);
-                    Ok(())
-                }
-            },
-            |_| Ok(Vec::new()),
-        );
+        self.register_no_dpeps::<C>(key, |_, builder, x| {
+            if builder.has::<C>() {
+                anyhow::bail!("component already inserted")
+            } else {
+                builder.add(x);
+                Ok(())
+            }
+        });
     }
 
-    pub fn register_component_with_constructor_ctx<Seed: DeserializeOwned, C: Clone + Component>(
-        &mut self,
-        key: &str,
-        constructor: impl Fn(Seed, &mut T) -> anyhow::Result<C> + 'static,
-        deps: impl Fn(&serde_json::value::RawValue) -> anyhow::Result<Vec<PathBuf>> + 'static,
-    ) {
-        self.register::<Seed>(
-            key,
-            move |ctx, builder, x| {
-                if builder.has::<C>() {
-                    anyhow::bail!("component already inserted")
-                } else {
-                    builder.add(constructor(x, ctx)?);
-                    Ok(())
-                }
-            },
-            deps,
-        );
+    pub fn register_component_with_constructor_ctx<C>(&mut self, key: &str)
+    where
+        C: Clone + Component + DeserializeWithManifestCtx<T>,
+    {
+        if self.registry.contains_key(key) {
+            panic!("duplicate key {key:?}");
+        }
+
+        let entry = ComponentEntry {
+            deps: Box::new(move |val| {
+                let manifest = serde_json::from_str(val.get())?;
+                Ok(C::deps(manifest))
+            }),
+            builder: Box::new(move |ctx, builder, val| {
+                let manifest = serde_json::from_str(val.get())?;
+                builder.add(C::from_manifest(ctx, manifest)?);
+                Ok(())
+            }),
+        };
+
+        self.registry.insert(key.to_string(), entry);
     }
 
     pub fn register_component_with_constructor<Seed: DeserializeOwned, C: Clone + Component>(
@@ -77,32 +79,27 @@ impl<T> PrefabFactory<T> {
         key: &str,
         constructor: impl Fn(Seed) -> C + 'static,
     ) {
-        self.register::<Seed>(
-            key,
-            move |_, builder, x| {
-                if builder.has::<C>() {
-                    anyhow::bail!("component already inserted")
-                } else {
-                    builder.add(constructor(x));
-                    Ok(())
-                }
-            },
-            |_| Ok(Vec::new()),
-        );
+        self.register_no_dpeps::<Seed>(key, move |_, builder, x| {
+            if builder.has::<C>() {
+                anyhow::bail!("component already inserted")
+            } else {
+                builder.add(constructor(x));
+                Ok(())
+            }
+        });
     }
 
-    pub fn register<V: DeserializeOwned>(
+    pub fn register_no_dpeps<V: DeserializeOwned>(
         &mut self,
         key: &str,
         insert: impl Fn(&mut T, &mut EntityBuilderClone, V) -> anyhow::Result<()> + 'static,
-        deps: impl Fn(&serde_json::value::RawValue) -> anyhow::Result<Vec<PathBuf>> + 'static,
     ) {
         if self.registry.contains_key(key) {
             panic!("duplicate key {key:?}");
         }
 
         let entry = ComponentEntry {
-            deps: Box::new(deps),
+            deps: Box::new(|_| Ok(Vec::new())),
             builder: Box::new(move |ctx, builder, val| {
                 let val = serde_json::from_str::<V>(val.get())?;
                 insert(ctx, builder, val)?;
@@ -143,7 +140,7 @@ impl<T> PrefabFactory<T> {
     }
 }
 
-impl<T> Default for PrefabFactory<T> {
+impl<T: 'static> Default for PrefabFactory<T> {
     fn default() -> Self {
         Self::new()
     }
