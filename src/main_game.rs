@@ -33,10 +33,32 @@ impl State for MainGame {
 
     fn plan_collision_queries(
         &mut self,
-        _dt: f32,
-        _resources: &mut Resources,
-        _cmds: &mut CommandBuffer,
+        dt: f32,
+        resources: &mut Resources,
+        cmds: &mut CommandBuffer,
     ) {
+        let spawn_poses = [
+            vec2(0.0, 0.0),
+            vec2(512.0, 0.0),
+            vec2(512.0, 512.0),
+            vec2(0.0, 512.0),
+            vec2(512.0, 256.0),
+        ];
+
+        for (_, spawn) in &mut resources.world.query::<&mut EnemySpawner>() {
+            spawn.next_spawn -= dt;
+            if spawn.next_spawn > 0.0 {
+                continue;
+            }
+            spawn.next_spawn = spawn.spawn_time;
+            let pos = fastrand::choice(spawn_poses).unwrap();
+            spawn_prefab(
+                cmds,
+                &resources,
+                spawn.enemy_prefab,
+                Transform::from_pos(pos),
+            );
+        }
     }
 
     fn update(
