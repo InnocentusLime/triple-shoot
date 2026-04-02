@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, path::PathBuf};
+use std::{marker::PhantomData, path::Path, rc::Rc};
 
 use anyhow::Context;
 use hashbrown::{HashMap, HashSet};
@@ -14,7 +14,7 @@ pub trait DeserializeWithManifestCtx<T>: Sized + 'static {
     type Manifest<'a>: Deserialize<'a>;
 
     fn from_manifest(ctx: &mut T, manifest: Self::Manifest<'_>) -> anyhow::Result<Self>;
-    fn deps(manifest: Self::Manifest<'_>) -> Vec<PathBuf>;
+    fn deps(manifest: Self::Manifest<'_>) -> impl Iterator<Item = &'_ Path>;
 }
 
 pub struct PrefabFactory<T> {
@@ -61,9 +61,10 @@ impl<T: 'static> PrefabFactory<T> {
         }
 
         let entry = ComponentEntry {
-            deps: Box::new(move |val| {
+            deps: Box::new(move |val, container| {
                 let manifest = serde_json::from_str(val.get())?;
-                Ok(C::deps(manifest))
+                container.extend(C::deps(manifest).map(Rc::from));
+                Ok(())
             }),
             builder: Box::new(move |ctx, builder, val| {
                 let manifest = serde_json::from_str(val.get())?;
@@ -100,7 +101,7 @@ impl<T: 'static> PrefabFactory<T> {
         }
 
         let entry = ComponentEntry {
-            deps: Box::new(|_| Ok(Vec::new())),
+            deps: Box::new(|_, _| Ok(())),
             builder: Box::new(move |ctx, builder, val| {
                 let val = serde_json::from_str::<V>(val.get())?;
                 insert(ctx, builder, val)?;
@@ -111,14 +112,13 @@ impl<T: 'static> PrefabFactory<T> {
         self.registry.insert(key.to_string(), entry);
     }
 
-    pub fn list_deps(&self, pref: &PrePrefab) -> anyhow::Result<HashSet<PathBuf>> {
+    pub fn list_deps(&self, pref: &PrePrefab) -> anyhow::Result<HashSet<Rc<Path>>> {
         let mut result = HashSet::new();
         for (name, value) in pref.0.iter() {
             let Some(entry) = self.registry.get(*name) else {
                 anyhow::bail!("unknown component: {name:?}");
             };
-            let deps = (entry.deps)(value).with_context(|| format!("deps of {name:?}"))?;
-            result.extend(deps);
+            (entry.deps)(value, &mut result).with_context(|| format!("deps of {name:?}"))?;
         }
 
         Ok(result)
@@ -152,7 +152,8 @@ struct ComponentEntry<T> {
     builder: ComponentBuilder<T>,
 }
 
-type ComponentDependencies = Box<dyn Fn(&RawJsonValue) -> anyhow::Result<Vec<PathBuf>>>;
+type ComponentDependencies =
+    Box<dyn Fn(&RawJsonValue, &mut HashSet<Rc<Path>>) -> anyhow::Result<()>>;
 
 type ComponentBuilder<T> =
     Box<dyn Fn(&mut T, &mut EntityBuilderClone, &RawJsonValue) -> anyhow::Result<()>>;
