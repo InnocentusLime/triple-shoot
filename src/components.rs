@@ -51,8 +51,9 @@ impl EnemySpawnerManifest {
 }
 
 #[derive(Debug, Clone, Copy, serde::Deserialize)]
+#[serde(tag = "ai")]
 pub enum NpcAi {
-    JustFollowPlayer,
+    JustFollowPlayer { speed: f32 },
 }
 
 #[derive(Debug, Clone, Copy)]
