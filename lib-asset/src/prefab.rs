@@ -4,10 +4,11 @@ use anyhow::Context;
 use hashbrown::{HashMap, HashSet};
 use hecs::{Component, DynamicBundleClone, EntityBuilderClone};
 use serde::{Deserialize, de::DeserializeOwned};
+use serde_json::value::RawValue as RawJsonValue;
 
 #[derive(Deserialize)]
 #[serde(transparent)]
-pub struct PrePrefab<'a>(#[serde(borrow)] pub HashMap<&'a str, &'a serde_json::value::RawValue>);
+pub struct PrePrefab<'a>(#[serde(borrow)] pub HashMap<&'a str, &'a RawJsonValue>);
 
 pub trait DeserializeWithManifestCtx<T>: Sized + 'static {
     type Manifest<'a>: Deserialize<'a>;
@@ -151,12 +152,10 @@ struct ComponentEntry<T> {
     builder: ComponentBuilder<T>,
 }
 
-type ComponentDependencies =
-    Box<dyn Fn(&serde_json::value::RawValue) -> anyhow::Result<Vec<PathBuf>>>;
+type ComponentDependencies = Box<dyn Fn(&RawJsonValue) -> anyhow::Result<Vec<PathBuf>>>;
 
-type ComponentBuilder<T> = Box<
-    dyn Fn(&mut T, &mut EntityBuilderClone, &serde_json::value::RawValue) -> anyhow::Result<()>,
->;
+type ComponentBuilder<T> =
+    Box<dyn Fn(&mut T, &mut EntityBuilderClone, &RawJsonValue) -> anyhow::Result<()>>;
 
 #[cfg(test)]
 mod tests {
