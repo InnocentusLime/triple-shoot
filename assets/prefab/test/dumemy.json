@@ -1,6 +1,9 @@
 {
     "team": "Enemy",
-    "npc": "JustFollowPlayer",
+    "npc": {
+        "ai": "JustFollowPlayer",
+        "speed": 24.0
+    },
     "transform": null,
     "hp": 3,
     "sprite": {

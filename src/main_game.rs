@@ -104,12 +104,12 @@ impl State for MainGame {
             .query::<(&Transform, &mut KinematicControl, &NpcAi)>();
         for (this, (tf, kin, ai)) in &mut query {
             match ai {
-                NpcAi::JustFollowPlayer => {
+                NpcAi::JustFollowPlayer { speed } => {
                     let walk_dir = (player_pos - tf.pos).normalize_or_zero();
                     let steer_dir = steer_dir(&resources.world, this, tf.pos);
                     let move_dir = (0.4 * walk_dir + 0.8 * steer_dir).normalize_or_zero();
 
-                    kin.dr = (24.0 * dt) * move_dir;
+                    kin.dr = (*speed * dt) * move_dir;
                 }
             }
         }
