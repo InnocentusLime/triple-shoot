@@ -1,20 +1,12 @@
 use std::path::{Path, PathBuf};
 
-use lib_game::{AssetKey, Resources};
+use lib_game::{AssetKey, DeserializeWithManifestCtx, Resources};
 
 use serde::Deserialize;
 
 pub fn register_components(prefab_factory: &mut lib_game::PrefabFactory<Resources>) {
-    prefab_factory.register_component_with_constructor_ctx(
-        "player_arsenal",
-        PlayerArsenalManifest::into_tag,
-        PlayerArsenalManifest::dependencies,
-    );
-    prefab_factory.register_component_with_constructor_ctx(
-        "enemy_spawner",
-        EnemySpawnerManifest::into_tag,
-        EnemySpawnerManifest::dependencies,
-    );
+    prefab_factory.register_component_with_constructor_ctx::<PlayerData>("player_arsenal");
+    prefab_factory.register_component_with_constructor_ctx::<EnemySpawner>("enemy_spawner");
     prefab_factory.register_component::<NpcAi>("npc");
 }
 
@@ -25,29 +17,33 @@ pub struct EnemySpawner {
     pub enemy_prefab: AssetKey,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct EnemySpawnerManifest {
-    pub spawn_time: f32,
-    pub enemy_prefab: PathBuf,
+impl DeserializeWithManifestCtx<Resources> for EnemySpawner {
+    type Manifest<'a> = EnemySpawnerManifest<'a>;
+
+    fn from_manifest(
+        resources: &mut Resources,
+        manifest: Self::Manifest<'_>,
+    ) -> anyhow::Result<Self> {
+        let Some(enemy_prefab) = resources.prefabs.resolve(manifest.enemy_prefab) else {
+            anyhow::bail!("No such prefab: {:?}", manifest.enemy_prefab);
+        };
+        Ok(EnemySpawner {
+            spawn_time: manifest.spawn_time,
+            next_spawn: manifest.spawn_time,
+            enemy_prefab,
+        })
+    }
+
+    fn deps(manifest: Self::Manifest<'_>) -> Vec<PathBuf> {
+        vec![manifest.enemy_prefab.into()]
+    }
 }
 
-impl EnemySpawnerManifest {
-    pub fn into_tag(self, resources: &mut Resources) -> anyhow::Result<EnemySpawner> {
-        let Some(enemy_prefab) = resources.prefabs.resolve(&self.enemy_prefab) else {
-            anyhow::bail!("No such prefab: {:?}", self.enemy_prefab);
-        };
-        Ok(EnemySpawner { spawn_time: self.spawn_time, next_spawn: self.spawn_time, enemy_prefab })
-    }
-
-    pub fn dependencies(data: &serde_json::value::RawValue) -> anyhow::Result<Vec<PathBuf>> {
-        #[derive(Deserialize)]
-        pub struct Deps<'a> {
-            #[serde(borrow)]
-            pub enemy_prefab: &'a Path,
-        }
-        let deps = serde_json::from_str::<Deps>(data.get())?;
-        Ok(vec![deps.enemy_prefab.into()])
-    }
+#[derive(Debug, Deserialize)]
+pub struct EnemySpawnerManifest<'a> {
+    pub spawn_time: f32,
+    #[serde(borrow)]
+    pub enemy_prefab: &'a Path,
 }
 
 #[derive(Debug, Clone, Copy, serde::Deserialize)]
@@ -62,27 +58,27 @@ pub struct PlayerData {
     pub speed: f32,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct PlayerArsenalManifest {
-    pub bullet_prefab: PathBuf,
-    pub speed: f32,
+impl DeserializeWithManifestCtx<Resources> for PlayerData {
+    type Manifest<'a> = PlayerDataManifest<'a>;
+
+    fn from_manifest(
+        resources: &mut Resources,
+        manifest: Self::Manifest<'_>,
+    ) -> anyhow::Result<Self> {
+        let Some(bullet_prefab) = resources.prefabs.resolve(manifest.bullet_prefab) else {
+            anyhow::bail!("No such prefab: {:?}", manifest.bullet_prefab);
+        };
+        Ok(PlayerData { bullet_prefab, speed: manifest.speed })
+    }
+
+    fn deps(manifest: Self::Manifest<'_>) -> Vec<PathBuf> {
+        vec![manifest.bullet_prefab.into()]
+    }
 }
 
-impl PlayerArsenalManifest {
-    pub fn into_tag(self, resources: &mut Resources) -> anyhow::Result<PlayerData> {
-        let Some(bullet_prefab) = resources.prefabs.resolve(&self.bullet_prefab) else {
-            anyhow::bail!("No such prefab: {:?}", self.bullet_prefab);
-        };
-        Ok(PlayerData { bullet_prefab, speed: self.speed })
-    }
-
-    pub fn dependencies(data: &serde_json::value::RawValue) -> anyhow::Result<Vec<PathBuf>> {
-        #[derive(Deserialize)]
-        pub struct Deps<'a> {
-            #[serde(borrow)]
-            pub bullet_prefab: &'a Path,
-        }
-        let deps = serde_json::from_str::<Deps>(data.get())?;
-        Ok(vec![deps.bullet_prefab.into()])
-    }
+#[derive(Debug, Deserialize)]
+pub struct PlayerDataManifest<'a> {
+    #[serde(borrow)]
+    pub bullet_prefab: &'a Path,
+    pub speed: f32,
 }

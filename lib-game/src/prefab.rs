@@ -33,46 +33,42 @@ pub fn register_libgame_components(prefab_factory: &mut PrefabFactory<Resources>
     prefab_factory.register_component::<ProjectileTag>("projectile");
     prefab_factory.register_component::<Team>("team");
 
-    prefab_factory.register_component_with_constructor_ctx(
-        "sprite",
-        SpriteManifest::into_sprite,
-        SpriteManifest::dependencies,
-    );
+    prefab_factory.register_component_with_constructor_ctx::<Sprite>("sprite");
+}
+
+impl DeserializeWithManifestCtx<Resources> for Sprite {
+    type Manifest<'a> = SpriteManifest<'a>;
+
+    fn from_manifest(
+        resources: &mut Resources,
+        manifest: Self::Manifest<'_>,
+    ) -> anyhow::Result<Self> {
+        let Some(texture) = resources.textures.resolve(manifest.texture) else {
+            anyhow::bail!("No such texture: {:?}", manifest.texture);
+        };
+        Ok(Sprite {
+            layer: manifest.layer,
+            texture,
+            tex_rect_pos: manifest.tex_rect_pos,
+            tex_rect_size: manifest.tex_rect_size,
+            color: mimiq::WHITE,
+            sort_offset: manifest.sort_offset,
+            local_offset: manifest.local_offset,
+        })
+    }
+
+    fn deps(manifest: Self::Manifest<'_>) -> Vec<PathBuf> {
+        vec![manifest.texture.into()]
+    }
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SpriteManifest {
+pub struct SpriteManifest<'a> {
     pub layer: u32,
-    pub texture: PathBuf,
+    #[serde(borrow)]
+    pub texture: &'a Path,
     pub tex_rect_pos: UVec2,
     pub tex_rect_size: UVec2,
     pub sort_offset: f32,
     pub local_offset: Vec2,
-}
-
-impl SpriteManifest {
-    pub fn into_sprite(self, resources: &mut Resources) -> anyhow::Result<Sprite> {
-        let Some(texture) = resources.textures.resolve(&self.texture) else {
-            anyhow::bail!("No such texture: {:?}", self.texture);
-        };
-        Ok(Sprite {
-            layer: self.layer,
-            texture,
-            tex_rect_pos: self.tex_rect_pos,
-            tex_rect_size: self.tex_rect_size,
-            color: mimiq::WHITE,
-            sort_offset: self.sort_offset,
-            local_offset: self.local_offset,
-        })
-    }
-
-    pub fn dependencies(data: &serde_json::value::RawValue) -> anyhow::Result<Vec<PathBuf>> {
-        #[derive(Deserialize)]
-        pub struct Deps<'a> {
-            #[serde(borrow)]
-            pub texture: &'a Path,
-        }
-        let deps = serde_json::from_str::<Deps>(data.get())?;
-        Ok(vec![deps.texture.into()])
-    }
 }
