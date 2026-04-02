@@ -3,7 +3,8 @@
     "hp": 3,
     "team": "Player",
     "player_arsenal": {
-        "bullet_prefab": "prefab/test/bullet.json"
+        "bullet_prefab": "prefab/test/bullet.json",
+        "speed": 32.0
     },
     "transform": null,
     "sprite": {

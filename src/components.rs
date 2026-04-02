@@ -57,21 +57,23 @@ pub enum NpcAi {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct PlayerArsenal {
+pub struct PlayerData {
     pub bullet_prefab: AssetKey,
+    pub speed: f32,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct PlayerArsenalManifest {
     pub bullet_prefab: PathBuf,
+    pub speed: f32,
 }
 
 impl PlayerArsenalManifest {
-    pub fn into_tag(self, resources: &mut Resources) -> anyhow::Result<PlayerArsenal> {
+    pub fn into_tag(self, resources: &mut Resources) -> anyhow::Result<PlayerData> {
         let Some(bullet_prefab) = resources.prefabs.resolve(&self.bullet_prefab) else {
             anyhow::bail!("No such prefab: {:?}", self.bullet_prefab);
         };
-        Ok(PlayerArsenal { bullet_prefab })
+        Ok(PlayerData { bullet_prefab, speed: self.speed })
     }
 
     pub fn dependencies(data: &serde_json::value::RawValue) -> anyhow::Result<Vec<PathBuf>> {

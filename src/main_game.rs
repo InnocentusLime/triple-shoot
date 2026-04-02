@@ -81,9 +81,9 @@ impl State for MainGame {
         let mut player_pos = Vec2::ZERO;
         let mut query = resources
             .world
-            .query::<(&mut Transform, &mut KinematicControl, &PlayerArsenal)>();
-        for (_, (tf, kin, arsenal)) in &mut query {
-            kin.dr = 32.0 * dt * input_model.player_move_direction;
+            .query::<(&mut Transform, &mut KinematicControl, &PlayerData)>();
+        for (_, (tf, kin, data)) in &mut query {
+            kin.dr = data.speed * dt * input_model.player_move_direction;
             let pos = tf.pos + 32.0 * input_model.player_aim_direction;
             player_pos = tf.pos;
 
@@ -92,7 +92,7 @@ impl State for MainGame {
                 spawn_prefab(
                     cmds,
                     resources,
-                    arsenal.bullet_prefab,
+                    data.bullet_prefab,
                     Transform { pos, angle: input_model.player_aim_direction.to_angle() },
                 );
             }
