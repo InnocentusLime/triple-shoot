@@ -16,6 +16,7 @@ anyhow = { workspace = true }
 lib-col = { path = "./lib-col"}
 lib-game = { path = "./lib-game" }
 lib-asset = { path = "./lib-asset" }
+fastrand = { version = "2", features = ["std", "js"] }
 
 [features]
 dbg = ["lib-game/dbg"]
