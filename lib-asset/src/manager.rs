@@ -1,6 +1,6 @@
 use core::fmt;
 use std::collections::VecDeque;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::rc::Rc;
 
 use crate::{FsResolver, PrefabFactory};
@@ -167,7 +167,7 @@ impl<T: 'static> AssetManager<T> {
         let data = event
             .bytes_result
             .with_context(|| format!("load_file({asset_path:?})"))?;
-        let deps: HashSet<PathBuf>;
+        let deps: HashSet<Rc<Path>>;
         let already_ready: bool;
         (deps, already_ready, node) = node.bytes_ready(&self.nodes, data)?;
         tracing::debug!(target: TARGET_NAME, deps=?deps, path=?asset_path, state=?node.state, "bytes parsed");
@@ -226,7 +226,7 @@ impl<T> AssetNode<T> {
         self,
         others: &HashMap<Rc<Path>, AssetNode<T>>,
         data: Vec<u8>,
-    ) -> anyhow::Result<(HashSet<PathBuf>, bool, Self)> {
+    ) -> anyhow::Result<(HashSet<Rc<Path>>, bool, Self)> {
         let (deps, all_deps_ready, state) = self
             .state
             .bytes_ready(others, data)
@@ -261,7 +261,7 @@ impl<T> AssetNodeState<T> {
         self,
         others: &HashMap<Rc<Path>, AssetNode<T>>,
         data: Vec<u8>,
-    ) -> anyhow::Result<(HashSet<PathBuf>, bool, Self)> {
+    ) -> anyhow::Result<(HashSet<Rc<Path>>, bool, Self)> {
         let AssetNodeState::PendingFsRequest { on_bytes_ready, on_deps_ready } = self else {
             tracing::warn!("not wating for bytes");
             return Ok((HashSet::new(), false, self));
@@ -271,7 +271,7 @@ impl<T> AssetNodeState<T> {
             .iter()
             .filter(|dep| {
                 others
-                    .get(dep.as_path())
+                    .get(&**dep)
                     .map(|x| !x.state.is_initialized())
                     .unwrap_or(true)
             })
@@ -301,7 +301,7 @@ impl<T> fmt::Debug for AssetNodeState<T> {
     }
 }
 
-type OnBytesReady = Box<dyn FnOnce(&[u8]) -> anyhow::Result<HashSet<PathBuf>>>;
+type OnBytesReady = Box<dyn FnOnce(&[u8]) -> anyhow::Result<HashSet<Rc<Path>>>>;
 type OnDepsReady<T> = Box<dyn FnOnce(&mut T, &FsResolver, Vec<u8>) -> anyhow::Result<()>>;
 
 #[cfg(test)]
@@ -319,7 +319,7 @@ mod tests {
         init_test_logger();
         let mut manager = make_manager();
 
-        manager.create_asset_task(simple_node(*PATH_A, vec![]));
+        manager.create_asset_task(simple_node(*PATH_A, &[]));
         manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
         assert!(manager.nodes[*PATH_A].state.is_initialized());
     }
@@ -329,7 +329,7 @@ mod tests {
         init_test_logger();
         let mut manager = make_manager();
 
-        manager.create_asset_task(simple_node(*PATH_A, vec![]));
+        manager.create_asset_task(simple_node(*PATH_A, &[]));
         manager
             .on_file_ready(&mut (), file_err(*PATH_A))
             .unwrap_err();
@@ -341,7 +341,7 @@ mod tests {
         init_test_logger();
         let mut manager = make_manager();
 
-        manager.create_asset_task(simple_node(*PATH_A, vec![PATH_B.to_path_buf()]));
+        manager.create_asset_task(simple_node(*PATH_A, &[&PATH_B]));
         manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
         assert!(manager.nodes.contains_key(*PATH_A));
         assert!(manager.dependents.contains_key(*PATH_B));
@@ -350,7 +350,7 @@ mod tests {
             AssetNodeState::BytesReady { .. }
         ));
 
-        manager.create_asset_task(simple_node(*PATH_B, vec![]));
+        manager.create_asset_task(simple_node(*PATH_B, &[]));
         manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
         assert!(manager.nodes[*PATH_A].state.is_initialized());
     }
@@ -360,11 +360,11 @@ mod tests {
         init_test_logger();
         let mut manager = make_manager();
 
-        manager.create_asset_task(simple_node(*PATH_B, vec![]));
+        manager.create_asset_task(simple_node(*PATH_B, &[]));
         manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
         assert!(manager.nodes[*PATH_B].state.is_initialized());
 
-        manager.create_asset_task(simple_node(*PATH_A, vec![PATH_B.to_path_buf()]));
+        manager.create_asset_task(simple_node(*PATH_A, &[&PATH_B]));
         manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
         assert!(manager.dependents.contains_key(*PATH_B));
         assert!(manager.nodes[*PATH_A].state.is_initialized());
@@ -375,10 +375,7 @@ mod tests {
         init_test_logger();
         let mut manager = make_manager();
 
-        manager.create_asset_task(simple_node(
-            *PATH_A,
-            vec![PATH_B.to_path_buf(), PATH_C.to_path_buf()],
-        ));
+        manager.create_asset_task(simple_node(*PATH_A, &[&PATH_B, &PATH_C]));
         manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
         assert!(manager.nodes.contains_key(*PATH_A));
         assert!(manager.dependents.contains_key(*PATH_B));
@@ -388,14 +385,14 @@ mod tests {
             AssetNodeState::BytesReady { deps_not_loaded: 2, .. }
         ));
 
-        manager.create_asset_task(simple_node(*PATH_B, vec![]));
+        manager.create_asset_task(simple_node(*PATH_B, &[]));
         manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
         assert!(matches!(
             manager.nodes[*PATH_A].state,
             AssetNodeState::BytesReady { deps_not_loaded: 1, .. }
         ));
 
-        manager.create_asset_task(simple_node(*PATH_C, vec![]));
+        manager.create_asset_task(simple_node(*PATH_C, &[]));
         manager.on_file_ready(&mut (), file_ok(*PATH_C)).unwrap();
 
         assert!(manager.nodes[*PATH_A].state.is_initialized());
@@ -406,9 +403,9 @@ mod tests {
         init_test_logger();
         let mut manager = make_manager();
 
-        manager.create_asset_task(simple_node(*PATH_A, vec![PATH_B.to_path_buf()]));
-        manager.create_asset_task(simple_node(*PATH_B, vec![PATH_C.to_path_buf()]));
-        manager.create_asset_task(simple_node(*PATH_C, vec![]));
+        manager.create_asset_task(simple_node(*PATH_A, &[&PATH_B]));
+        manager.create_asset_task(simple_node(*PATH_B, &[&PATH_C]));
+        manager.create_asset_task(simple_node(*PATH_C, &[]));
 
         manager.on_file_ready(&mut (), file_ok(*PATH_C)).unwrap();
 
@@ -424,13 +421,10 @@ mod tests {
         init_test_logger();
         let mut manager = make_manager();
 
-        manager.create_asset_task(simple_node(*PATH_B, vec![]));
+        manager.create_asset_task(simple_node(*PATH_B, &[]));
         manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
 
-        manager.create_asset_task(simple_node(
-            *PATH_A,
-            vec![PATH_B.to_path_buf(), PATH_C.to_path_buf()],
-        ));
+        manager.create_asset_task(simple_node(*PATH_A, &[&PATH_B, &PATH_C]));
         manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
         assert!(manager.nodes.contains_key(*PATH_A));
         assert!(manager.dependents.contains_key(*PATH_B));
@@ -440,7 +434,7 @@ mod tests {
             AssetNodeState::BytesReady { deps_not_loaded: 1, .. }
         ));
 
-        manager.create_asset_task(simple_node(*PATH_C, vec![]));
+        manager.create_asset_task(simple_node(*PATH_C, &[]));
         manager.on_file_ready(&mut (), file_ok(*PATH_C)).unwrap();
 
         assert!(manager.nodes[*PATH_A].state.is_initialized());
@@ -451,13 +445,13 @@ mod tests {
         init_test_logger();
         let mut manager = make_manager();
 
-        manager.create_asset_task(simple_node(*PATH_A, vec![]));
-        manager.create_asset_task(simple_node(*PATH_A, vec![]));
-        manager.create_asset_task(simple_node(*PATH_A, vec![]));
+        manager.create_asset_task(simple_node(*PATH_A, &[]));
+        manager.create_asset_task(simple_node(*PATH_A, &[]));
+        manager.create_asset_task(simple_node(*PATH_A, &[]));
         manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
         assert!(manager.nodes[*PATH_A].state.is_initialized());
 
-        manager.create_asset_task(simple_node(*PATH_A, vec![]));
+        manager.create_asset_task(simple_node(*PATH_A, &[]));
         assert!(manager.nodes[*PATH_A].state.is_initialized());
     }
 
@@ -466,9 +460,9 @@ mod tests {
         init_test_logger();
         let mut manager = make_manager();
 
-        manager.create_asset_task(simple_node(*PATH_A, vec![PATH_B.to_path_buf()]));
-        manager.create_asset_task(simple_node(*PATH_B, vec![PATH_C.to_path_buf()]));
-        manager.create_asset_task(simple_node(*PATH_C, vec![PATH_A.to_path_buf()]));
+        manager.create_asset_task(simple_node(*PATH_A, &[&PATH_B]));
+        manager.create_asset_task(simple_node(*PATH_B, &[&PATH_C]));
+        manager.create_asset_task(simple_node(*PATH_C, &[&PATH_A]));
 
         manager.on_file_ready(&mut (), file_ok(*PATH_C)).unwrap();
         manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
@@ -480,10 +474,7 @@ mod tests {
         init_test_logger();
         let mut manager = make_manager();
 
-        manager.create_asset_task(simple_node(
-            *PATH_A,
-            vec![PATH_B.to_path_buf(), PATH_B.to_path_buf()],
-        ));
+        manager.create_asset_task(simple_node(*PATH_A, &[&PATH_B, &PATH_B]));
         manager.on_file_ready(&mut (), file_ok(*PATH_A)).unwrap();
         assert!(manager.nodes.contains_key(*PATH_A));
         assert!(manager.dependents.contains_key(*PATH_B));
@@ -492,7 +483,7 @@ mod tests {
             AssetNodeState::BytesReady { .. }
         ));
 
-        manager.create_asset_task(simple_node(*PATH_B, vec![]));
+        manager.create_asset_task(simple_node(*PATH_B, &[]));
         manager.on_file_ready(&mut (), file_ok(*PATH_B)).unwrap();
         assert!(manager.nodes[*PATH_A].state.is_initialized());
     }
@@ -526,11 +517,12 @@ mod tests {
             }
         }
 
-        pub fn simple_node(path: &Path, deps: Vec<PathBuf>) -> AssetNode<()> {
+        pub fn simple_node(path: &Path, deps: &[&Path]) -> AssetNode<()> {
+            let deps = HashSet::from_iter(deps.iter().copied().map(Rc::from));
             AssetNode::new(
                 path.into(),
                 "test_node",
-                Box::new(move |_| Ok(HashSet::from_iter(deps))),
+                Box::new(move |_| Ok(deps)),
                 Box::new(|_, _, _| Ok(())),
             )
         }

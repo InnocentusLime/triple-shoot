@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::components::*;
 use crate::prelude::*;
@@ -57,8 +57,8 @@ impl DeserializeWithManifestCtx<Resources> for Sprite {
         })
     }
 
-    fn deps(manifest: Self::Manifest<'_>) -> Vec<PathBuf> {
-        vec![manifest.texture.into()]
+    fn deps(manifest: Self::Manifest<'_>) -> impl Iterator<Item = &'_ Path> {
+        [manifest.texture].into_iter()
     }
 }
 

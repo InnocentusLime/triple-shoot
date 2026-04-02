@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use lib_game::{AssetKey, DeserializeWithManifestCtx, Resources};
 
@@ -34,8 +34,8 @@ impl DeserializeWithManifestCtx<Resources> for EnemySpawner {
         })
     }
 
-    fn deps(manifest: Self::Manifest<'_>) -> Vec<PathBuf> {
-        vec![manifest.enemy_prefab.into()]
+    fn deps(manifest: Self::Manifest<'_>) -> impl Iterator<Item = &'_ Path> {
+        [manifest.enemy_prefab].into_iter()
     }
 }
 
@@ -71,8 +71,8 @@ impl DeserializeWithManifestCtx<Resources> for PlayerData {
         Ok(PlayerData { bullet_prefab, speed: manifest.speed })
     }
 
-    fn deps(manifest: Self::Manifest<'_>) -> Vec<PathBuf> {
-        vec![manifest.bullet_prefab.into()]
+    fn deps(manifest: Self::Manifest<'_>) -> impl Iterator<Item = &'_ Path> {
+        [manifest.bullet_prefab].into_iter()
     }
 }
 
