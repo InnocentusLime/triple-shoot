@@ -56,6 +56,8 @@ pub enum NpcAi {
 pub struct PlayerData {
     pub bullet_prefab: AssetKey,
     pub speed: f32,
+    pub shoot_cooldown: f32,
+    pub next_shoot: f32,
 }
 
 impl DeserializeWithManifestCtx<Resources> for PlayerData {
@@ -68,7 +70,12 @@ impl DeserializeWithManifestCtx<Resources> for PlayerData {
         let Some(bullet_prefab) = resources.prefabs.resolve(manifest.bullet_prefab) else {
             anyhow::bail!("No such prefab: {:?}", manifest.bullet_prefab);
         };
-        Ok(PlayerData { bullet_prefab, speed: manifest.speed })
+        Ok(PlayerData {
+            bullet_prefab,
+            speed: manifest.speed,
+            shoot_cooldown: manifest.shoot_cooldown,
+            next_shoot: 0.0,
+        })
     }
 
     fn deps(manifest: Self::Manifest<'_>) -> impl Iterator<Item = &'_ Path> {
@@ -81,4 +88,5 @@ pub struct PlayerDataManifest<'a> {
     #[serde(borrow)]
     pub bullet_prefab: &'a Path,
     pub speed: f32,
+    pub shoot_cooldown: f32,
 }

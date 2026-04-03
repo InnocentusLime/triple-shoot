@@ -6,7 +6,7 @@ use mimiq::util::InputTracker;
 #[derive(Debug)]
 pub struct InputModel {
     pub player_move_direction: Vec2,
-    pub shoot_pressed: bool,
+    pub shoot_down: bool,
     pub player_aim_direction: Vec2,
 }
 
@@ -52,7 +52,7 @@ impl Input {
         }
         player_move_direction = player_move_direction.normalize_or_zero();
 
-        let shoot_pressed = self.buttons.is_button_pressed(MouseButton::Left);
+        let shoot_pressed = self.buttons.is_button_held(MouseButton::Left);
 
         let mut player_aim_direction = Vec2::Y;
         for (_, player_tf) in world.query_mut::<&Transform>().with::<&PlayerTag>() {
@@ -60,7 +60,8 @@ impl Input {
             player_aim_direction = dr.normalize_or(player_aim_direction);
         }
 
-        let model = InputModel { player_move_direction, shoot_pressed, player_aim_direction };
+        let model =
+            InputModel { player_move_direction, shoot_down: shoot_pressed, player_aim_direction };
         dump!("input: {model:#.2?}");
         model
     }

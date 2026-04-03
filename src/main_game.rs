@@ -81,20 +81,24 @@ impl State for MainGame {
         let mut player_pos = Vec2::ZERO;
         let mut query = resources
             .world
-            .query::<(&mut Transform, &mut KinematicControl, &PlayerData)>();
+            .query::<(&mut Transform, &mut KinematicControl, &mut PlayerData)>();
         for (_, (tf, kin, data)) in &mut query {
             kin.dr = data.speed * dt * input_model.player_move_direction;
             let pos = tf.pos + 32.0 * input_model.player_aim_direction;
             player_pos = tf.pos;
 
-            if input_model.shoot_pressed {
-                info!("shoot");
+            if input_model.shoot_down && data.next_shoot <= 0.0 {
+                data.next_shoot = data.shoot_cooldown;
                 spawn_prefab(
                     cmds,
                     resources,
                     data.bullet_prefab,
                     Transform { pos, angle: input_model.player_aim_direction.to_angle() },
                 );
+            }
+
+            if data.next_shoot > 0.0 {
+                data.next_shoot -= dt;
             }
         }
         std::mem::drop(query);
