@@ -136,10 +136,9 @@ impl<T: 'static> AssetManager<T> {
 
         self.queue.push_back(start);
         while let Some(asset) = self.queue.pop_front() {
-            let mut node = self
-                .nodes
-                .remove(&asset)
-                .expect("BUG: traversed to a non-existent node");
+            let Some(mut node) = self.nodes.remove(&asset) else {
+                anyhow::bail!("traversed to an absent node: {asset:?}");
+            };
             node = node.dependency_ready(&self.fs_resolver, ctx)?;
             let ready = node.state.is_initialized();
             self.nodes.insert(asset.clone(), node);
