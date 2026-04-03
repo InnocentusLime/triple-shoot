@@ -10,7 +10,7 @@ use mimiq::{FileReady, FsServer};
 use anyhow::Context;
 use hashbrown::{HashMap, HashSet};
 use hecs::{BuiltEntityClone, EntityBuilderClone};
-use tracing::{instrument, warn};
+use tracing::instrument;
 
 const TARGET_NAME: &str = "asset_manager";
 
@@ -161,7 +161,7 @@ impl<T: 'static> AssetManager<T> {
     fn node_file_ready(&mut self, event: FileReady) -> anyhow::Result<Option<Rc<Path>>> {
         let asset_path = Rc::<Path>::from(event.path);
         let Some(mut node) = self.nodes.remove(&asset_path) else {
-            warn!("no such node: {asset_path:?}");
+            tracing::warn!("no such node: {asset_path:?}");
             return Ok(None);
         };
         let data = event
