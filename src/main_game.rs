@@ -88,19 +88,17 @@ impl State for MainGame {
             player_pos = tf.pos;
 
             if input_model.shoot_down && data.next_shoot <= 0.0 {
-                data.next_shoot = data.shoot_cooldown;
-                let offsets = [
-                    0.8 * -std::f32::consts::FRAC_PI_4,
-                    0.8 * -std::f32::consts::FRAC_PI_8,
-                    0.0,
-                    0.8 * std::f32::consts::FRAC_PI_8,
-                    0.8 * std::f32::consts::FRAC_PI_4,
-                ];
-                for offset in offsets {
+                data.next_shoot = data.shotgun.shoot_cooldown;
+
+                let spread_angle = data.shotgun.spread_angle.to_radians();
+                let base = -spread_angle / 2.0;
+                let delta = spread_angle / (data.shotgun.bullets_in_spread as f32);
+                for offset_idx in 0..data.shotgun.bullets_in_spread {
+                    let offset = base + (offset_idx as f32) * delta;
                     spawn_prefab(
                         cmds,
                         resources,
-                        data.bullet_prefab,
+                        data.shotgun.bullet_prefab,
                         Transform {
                             pos,
                             angle: input_model.player_aim_direction.to_angle() + offset,
