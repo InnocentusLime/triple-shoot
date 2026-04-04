@@ -89,32 +89,37 @@ fn decode_collision_group_manifest<'de, D>(des: D) -> Result<Group, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let groups = <_>::deserialize(des)?;
-    Ok(CollisionGroupManifest::fold_groups(groups))
-}
+    const VARIANT_NAMES: &[&str] = &["Level", "Characters", "Attacks", "Player"];
+    const VARIANT_VALUES: &[Group] =
+        &[col_group::LEVEL, col_group::CHARACTERS, col_group::ATTACKS, col_group::PLAYER];
 
-#[derive(Debug, Deserialize)]
-enum CollisionGroupManifest {
-    Level,
-    Characters,
-    Player,
-    Attacks,
-}
+    struct GroupVisitor(Group);
 
-impl CollisionGroupManifest {
-    fn fold_groups(groups: Vec<CollisionGroupManifest>) -> Group {
-        groups
-            .into_iter()
-            .map(CollisionGroupManifest::into_group)
-            .fold(col_group::NONE, Group::union)
-    }
+    impl<'de> serde::de::Visitor<'de> for GroupVisitor {
+        type Value = Group;
 
-    fn into_group(self) -> Group {
-        match self {
-            CollisionGroupManifest::Level => col_group::LEVEL,
-            CollisionGroupManifest::Characters => col_group::CHARACTERS,
-            CollisionGroupManifest::Player => col_group::PLAYER,
-            CollisionGroupManifest::Attacks => col_group::ATTACKS,
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            write!(formatter, "a sequence of strings")
+        }
+
+        fn visit_seq<A>(mut self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: serde::de::SeqAccess<'de>,
+        {
+            let bail = <A::Error as serde::de::Error>::unknown_variant;
+            while let Some(x) = seq.next_element::<&str>()? {
+                let (_, x) = VARIANT_NAMES
+                    .iter()
+                    .copied()
+                    .zip(VARIANT_VALUES.iter().copied())
+                    .find(|(y, _)| *y == x)
+                    .ok_or_else(|| bail(x, VARIANT_NAMES))?;
+                self.0 = self.0.union(x);
+            }
+            Ok(self.0)
         }
     }
+
+    debug_assert_eq!(VARIANT_NAMES.len(), VARIANT_VALUES.len());
+    des.deserialize_seq(GroupVisitor(col_group::NONE))
 }
