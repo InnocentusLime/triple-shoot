@@ -9,6 +9,10 @@
         "hp": 3,
         "cooldown_length": 0.5
     },
+    "knockback": {
+        "knockback_length": 1.0,
+        "knockback_speed": 64.0
+    },
     "sprite": {
         "layer": 0,
         "texture": "atlas/bnuuy.png",

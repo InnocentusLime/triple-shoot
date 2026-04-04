@@ -26,6 +26,7 @@ pub fn register_libgame_components(prefab_factory: &mut PrefabFactory<Resources>
     prefab_factory.register_component::<BodyTag>("body");
     prefab_factory.register_component::<KinematicControl>("kinematic");
     prefab_factory.register_component::<PlayerTag>("player");
+    prefab_factory.register_component::<KnockbackState>("knockback");
     prefab_factory.register_component::<col_query::Level>("level_query");
     prefab_factory.register_component::<col_query::Damage>("damage_query");
     prefab_factory.register_component::<col_query::Pickup>("pickup_query");
