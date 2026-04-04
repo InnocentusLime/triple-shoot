@@ -5,7 +5,7 @@ use lib_game::{AssetKey, DeserializeWithManifestCtx, Resources};
 use serde::Deserialize;
 
 pub fn register_components(prefab_factory: &mut lib_game::PrefabFactory<Resources>) {
-    prefab_factory.register_component_with_constructor_ctx::<PlayerData>("player_arsenal");
+    prefab_factory.register_component_with_constructor_ctx::<PlayerData>("player_data");
     prefab_factory.register_component_with_constructor_ctx::<EnemySpawner>("enemy_spawner");
     prefab_factory.register_component::<NpcAi>("npc");
 }

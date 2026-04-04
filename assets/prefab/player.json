@@ -5,7 +5,7 @@
         "cooldown_length": 3.0
     },
     "team": "Player",
-    "player_arsenal": {
+    "player_data": {
         "bullet_prefab": "prefab/shotgun_bullet.json",
         "speed": 32.0,
         "shoot_cooldown": 1.0
