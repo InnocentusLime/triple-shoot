@@ -1,7 +1,7 @@
 pub use hashbrown::*;
 pub use hecs::*;
 pub use lib_asset::*;
-pub use lib_col::{Group, Shape};
+pub use lib_col::Group;
 pub use log::*;
 pub use mimiq::Color;
 pub use mimiq::glam::*;

@@ -1,5 +1,6 @@
 use crate::prelude::*;
 
+pub use lib_col::Shape;
 pub const MAX_COLLISION_QUERIES: usize = 8;
 
 #[derive(Clone, Copy, Debug, Deserialize)]
@@ -17,15 +18,13 @@ pub struct CollisionQuery<const ID: usize> {
     /// that group.
     #[serde(deserialize_with = "decode_collision_group_manifest")]
     pub filter: Group,
-    /// The collider to use for the check.
-    pub collider: Shape,
     #[serde(skip)]
     pub collision_slice: CollisionQuerySlice,
 }
 
 impl<const ID: usize> CollisionQuery<ID> {
-    pub fn new(collider: Shape, groups: Group, filter: Group) -> Self {
-        Self { collider, groups, filter, collision_slice: Default::default() }
+    pub fn new(groups: Group, filter: Group) -> Self {
+        Self { groups, filter, collision_slice: Default::default() }
     }
 
     pub fn has_collided(&self) -> bool {
@@ -60,7 +59,6 @@ impl KinematicControl {
 pub struct BodyTag {
     #[serde(deserialize_with = "decode_collision_group_manifest")]
     pub groups: Group,
-    pub shape: Shape,
 }
 
 pub mod col_group {

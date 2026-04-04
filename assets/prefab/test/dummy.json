@@ -14,11 +14,11 @@
         "tex_rect_size": [16, 16]
     },
     "body": {
-        "groups": ["Characters"],
-        "shape": {
-            "type": "Rect",
-            "width": 64.0,
-            "height": 32.0
-        }
+        "groups": ["Characters"]
+    },
+    "shape": {
+        "type": "Rect",
+        "width": 64.0,
+        "height": 32.0
     }
 }

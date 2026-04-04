@@ -20,19 +20,19 @@ impl CollisionSolver {
 
     pub fn import_colliders(&mut self, world: &mut World) {
         self.solver.clear();
-        let it = world.query_mut::<(&BodyTag, &Transform)>();
+        let it = world.query_mut::<(&BodyTag, &Shape, &Transform)>();
         let cold = it
             .into_iter()
-            .map(|(ent, (info, tf))| (ent, get_entity_collider(tf, info)));
+            .map(|(ent, (info, shape, tf))| (ent, get_entity_collider(tf, shape, info)));
         self.solver.fill(cold);
     }
 
     pub fn export_kinematic_moves(&mut self, world: &mut World) {
-        for (_, (tf, info, kin)) in
-            &mut world.query::<(&mut Transform, &BodyTag, &mut KinematicControl)>()
+        for (_, (tf, shape, kin)) in
+            &mut world.query::<(&mut Transform, &Shape, &mut KinematicControl)>()
         {
-            let mut character = get_entity_collider(tf, info);
-            character.group = kin.collision;
+            let col_tf = lib_col::conv::topleft_corner_tf_to_crate(tf.pos, tf.angle);
+            let character = lib_col::Collider { shape: *shape, group: kin.collision, tf: col_tf };
 
             let dr = lib_col::conv::topleft_corner_vector_to_crate(kin.dr);
             let (new_tf, collided) =
@@ -63,13 +63,14 @@ impl CollisionSolver {
     }
 
     pub fn compute_collisions_query<const ID: usize>(&mut self, world: &mut World) {
-        for (_, (tf, query)) in &mut world.query::<(&Transform, &mut CollisionQuery<ID>)>() {
+        for (_, (tf, shape, query)) in
+            &mut world.query::<(&Transform, &Shape, &mut CollisionQuery<ID>)>()
+        {
+            let shape_pos = world_tf_to_phys(*tf);
+            let query_col = lib_col::Collider { tf: shape_pos, shape: *shape, group: query.groups };
             let start = self.collision_buffer.len();
-            self.solver.query_overlaps(
-                &mut self.collision_buffer,
-                get_query_collider(tf, query),
-                query.filter,
-            );
+            self.solver
+                .query_overlaps(&mut self.collision_buffer, query_col, query.filter);
             let end = self.collision_buffer.len();
             query.collision_slice = CollisionQuerySlice { off: start, len: end - start };
         }
@@ -111,17 +112,9 @@ fn process_character_movement(
     (character.tf, collided)
 }
 
-fn get_query_collider<const ID: usize>(
-    tf: &Transform,
-    query: &CollisionQuery<ID>,
-) -> lib_col::Collider {
-    let shape_pos = world_tf_to_phys(*tf);
-    lib_col::Collider { tf: shape_pos, shape: query.collider, group: query.groups }
-}
-
-fn get_entity_collider(tf: &Transform, info: &BodyTag) -> lib_col::Collider {
+fn get_entity_collider(tf: &Transform, shape: &Shape, info: &BodyTag) -> lib_col::Collider {
     let col_tf = lib_col::conv::topleft_corner_tf_to_crate(tf.pos, tf.angle);
-    lib_col::Collider { shape: info.shape, group: info.groups, tf: col_tf }
+    lib_col::Collider { shape: *shape, group: info.groups, tf: col_tf }
 }
 
 fn world_tf_to_phys(tf: Transform) -> Affine2 {
@@ -146,19 +139,23 @@ mod tests {
 
         let col1 = world.spawn((
             Transform::from_xy(0.0, 0.0),
-            BodyTag { shape, groups: Group::from_id(0) },
+            shape,
+            BodyTag { groups: Group::from_id(0) },
         ));
         let col2 = world.spawn((
             Transform::from_xy(0.0, 0.0),
-            BodyTag { shape, groups: Group::from_id(1) },
+            shape,
+            BodyTag { groups: Group::from_id(1) },
         ));
         let q_1 = world.spawn((
             Transform::from_xy(0.0, 0.0),
-            CollisionQuery::<0>::new(shape, Group::from_id(0), Group::from_id(0)),
+            shape,
+            CollisionQuery::<0>::new(Group::from_id(0), Group::from_id(0)),
         ));
         let q_2 = world.spawn((
             Transform::from_xy(0.0, 0.0),
-            CollisionQuery::<0>::new(shape, Group::from_id(1), Group::from_id(1)),
+            shape,
+            CollisionQuery::<0>::new(Group::from_id(1), Group::from_id(1)),
         ));
 
         for _ in 0..3 {

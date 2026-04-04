@@ -22,6 +22,7 @@ pub fn spawn_prefab(
 pub fn register_libgame_components(prefab_factory: &mut PrefabFactory<Resources>) {
     prefab_factory.register_component_with_constructor("transform", Transform::from_unit);
     prefab_factory.register_component_with_constructor("lifetime", Lifetime::from_time);
+    prefab_factory.register_component::<Shape>("shape");
     prefab_factory.register_component::<Hp>("hp");
     prefab_factory.register_component::<BodyTag>("body");
     prefab_factory.register_component::<KinematicControl>("kinematic");
