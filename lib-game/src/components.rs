@@ -13,6 +13,17 @@ pub struct ProjectileTag {
     pub speed: f32,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct Lifetime {
+    pub time_left: f32,
+}
+
+impl Lifetime {
+    pub fn from_time(time: f32) -> Self {
+        Lifetime { time_left: time }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 pub enum Team {
     Player,

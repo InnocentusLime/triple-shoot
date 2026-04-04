@@ -4,6 +4,7 @@
     },
     "team": "Player",
     "transform": null,
+    "lifetime": 2.0,
     "sprite": {
         "layer": 0,
         "texture": "atlas/bnuuy.png",
