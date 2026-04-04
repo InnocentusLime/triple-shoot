@@ -2,6 +2,7 @@ mod collisions;
 mod components;
 mod hp;
 mod input;
+mod lifetime;
 mod prefab;
 mod prelude;
 mod projectile;
@@ -217,6 +218,7 @@ impl App {
             .state
             .update(dt, &mut self.resources, &self.col_solver, &mut self.cmds);
         hp::tick(dt, &mut self.resources.world);
+        lifetime::tick(dt, &mut self.resources.world, &mut self.cmds);
         self.cmds.run_on(&mut self.resources.world);
 
         self.resources.world.flush();
