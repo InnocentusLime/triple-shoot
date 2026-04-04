@@ -198,6 +198,7 @@ impl App {
         self.state
             .input(dt, &input_model, &mut self.resources, &mut self.cmds);
         projectile::step(dt, &mut self.resources.world);
+        common_systems::tick_knockback(dt, &mut self.resources.world);
 
         self.col_solver.import_colliders(&mut self.resources.world);
         self.col_solver

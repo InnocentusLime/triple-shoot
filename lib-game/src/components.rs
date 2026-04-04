@@ -29,6 +29,16 @@ pub enum Team {
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
+pub struct KnockbackState {
+    pub knockback_length: f32,
+    pub knockback_speed: f32,
+    #[serde(skip)]
+    pub knockback_direction: Vec2,
+    #[serde(skip)]
+    pub knockback_left: f32,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
 pub struct Hp {
     pub cooldown_length: f32,
     pub hp: i32,
