@@ -1,7 +1,10 @@
 {
     "team": "Enemy",
     "transform": null,
-    "hp": 3,
+    "hp": {
+        "hp": 3,
+        "cooldown_length": 1.0
+    },
     "sprite": {
         "layer": 0,
         "texture": "atlas/bnuuy.png",
