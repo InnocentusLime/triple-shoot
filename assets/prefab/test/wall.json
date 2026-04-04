@@ -1,11 +1,11 @@
 {
     "transform": null,
     "body": {
-        "groups": ["Level"],
-        "shape": {
-            "type": "Rect",
-            "width": 16.0,
-            "height": 256.0
-        }
+        "groups": ["Level"]
+    },
+    "shape": {
+        "type": "Rect",
+        "width": 16.0,
+        "height": 256.0
     }
 }

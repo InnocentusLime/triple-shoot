@@ -19,19 +19,14 @@
     },
     "damage_query": {
         "groups": ["Characters"],
-        "filter": [],
-        "collider": {
-            "type": "Rect",
-            "width": 11.0,
-            "height": 6.0
-        }
+        "filter": []
     },
     "body": {
-        "groups": ["Attacks"],
-        "shape": {
-            "type": "Rect",
-            "width": 11.0,
-            "height": 6.0
-        }
+        "groups": ["Attacks"]
+    },
+    "shape": {
+        "type": "Rect",
+        "width": 11.0,
+        "height": 6.0
     }
 }

@@ -23,12 +23,12 @@
         "collision": ["Level"],
         "slide": true
     },
+    "shape": {
+        "type": "Rect",
+        "width": 16.0,
+        "height": 16.0
+    },
     "body": {
-        "groups": ["Characters"],
-        "shape": {
-            "type": "Rect",
-            "width": 16.0,
-            "height": 16.0
-        }
+        "groups": ["Characters"]
     }
 }
