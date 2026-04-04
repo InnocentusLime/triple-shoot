@@ -1,10 +1,10 @@
 {
     "projectile": {
-        "speed": 128.0
+        "speed": 512.0
     },
     "team": "Player",
     "transform": null,
-    "lifetime": 2.0,
+    "lifetime": 0.15,
     "sprite": {
         "layer": 0,
         "texture": "atlas/bnuuy.png",

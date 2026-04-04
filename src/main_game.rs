@@ -84,17 +84,29 @@ impl State for MainGame {
             .query::<(&mut Transform, &mut KinematicControl, &mut PlayerData)>();
         for (_, (tf, kin, data)) in &mut query {
             kin.dr = data.speed * dt * input_model.player_move_direction;
-            let pos = tf.pos + 32.0 * input_model.player_aim_direction;
+            let pos = tf.pos + 8.0 * input_model.player_aim_direction;
             player_pos = tf.pos;
 
             if input_model.shoot_down && data.next_shoot <= 0.0 {
                 data.next_shoot = data.shoot_cooldown;
-                spawn_prefab(
-                    cmds,
-                    resources,
-                    data.bullet_prefab,
-                    Transform { pos, angle: input_model.player_aim_direction.to_angle() },
-                );
+                let offsets = [
+                    0.8 * -std::f32::consts::FRAC_PI_4,
+                    0.8 * -std::f32::consts::FRAC_PI_8,
+                    0.0,
+                    0.8 * std::f32::consts::FRAC_PI_8,
+                    0.8 * std::f32::consts::FRAC_PI_4,
+                ];
+                for offset in offsets {
+                    spawn_prefab(
+                        cmds,
+                        resources,
+                        data.bullet_prefab,
+                        Transform {
+                            pos,
+                            angle: input_model.player_aim_direction.to_angle() + offset,
+                        },
+                    );
+                }
             }
 
             if data.next_shoot > 0.0 {
