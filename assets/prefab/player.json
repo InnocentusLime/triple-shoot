@@ -6,9 +6,13 @@
     },
     "team": "Player",
     "player_data": {
-        "bullet_prefab": "prefab/shotgun_bullet.json",
         "speed": 32.0,
-        "shoot_cooldown": 1.0
+        "shotgun": {
+            "spread_angle": 60.0,
+            "bullets_in_spread": 5,
+            "bullet_prefab": "prefab/shotgun_bullet.json",
+            "shoot_cooldown": 1.0
+        }
     },
     "transform": null,
     "sprite": {

@@ -54,10 +54,17 @@ pub enum NpcAi {
 
 #[derive(Debug, Clone, Copy)]
 pub struct PlayerData {
-    pub bullet_prefab: AssetKey,
     pub speed: f32,
-    pub shoot_cooldown: f32,
     pub next_shoot: f32,
+    pub shotgun: ShotgunEntry,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ShotgunEntry {
+    pub bullet_prefab: AssetKey,
+    pub shoot_cooldown: f32,
+    pub bullets_in_spread: u8,
+    pub spread_angle: f32,
 }
 
 impl DeserializeWithManifestCtx<Resources> for PlayerData {
@@ -67,26 +74,39 @@ impl DeserializeWithManifestCtx<Resources> for PlayerData {
         resources: &mut Resources,
         manifest: Self::Manifest<'_>,
     ) -> anyhow::Result<Self> {
-        let Some(bullet_prefab) = resources.prefabs.resolve(manifest.bullet_prefab) else {
-            anyhow::bail!("No such prefab: {:?}", manifest.bullet_prefab);
+        let Some(shotgun_bullet_prefab) = resources.prefabs.resolve(manifest.shotgun.bullet_prefab)
+        else {
+            anyhow::bail!("No such prefab: {:?}", manifest.shotgun.bullet_prefab);
         };
         Ok(PlayerData {
-            bullet_prefab,
             speed: manifest.speed,
-            shoot_cooldown: manifest.shoot_cooldown,
             next_shoot: 0.0,
+            shotgun: ShotgunEntry {
+                bullet_prefab: shotgun_bullet_prefab,
+                shoot_cooldown: manifest.shotgun.shoot_cooldown,
+                bullets_in_spread: manifest.shotgun.bullets_in_spread,
+                spread_angle: manifest.shotgun.spread_angle,
+            },
         })
     }
 
     fn deps(manifest: Self::Manifest<'_>) -> impl Iterator<Item = &'_ Path> {
-        [manifest.bullet_prefab].into_iter()
+        [manifest.shotgun.bullet_prefab].into_iter()
     }
 }
 
 #[derive(Debug, Deserialize)]
 pub struct PlayerDataManifest<'a> {
     #[serde(borrow)]
-    pub bullet_prefab: &'a Path,
+    pub shotgun: GunEntryManifest<'a>,
     pub speed: f32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GunEntryManifest<'a> {
+    #[serde(borrow)]
+    pub bullet_prefab: &'a Path,
     pub shoot_cooldown: f32,
+    pub bullets_in_spread: u8,
+    pub spread_angle: f32,
 }
