@@ -5,7 +5,10 @@
         "speed": 24.0
     },
     "transform": null,
-    "hp": 3,
+    "hp": {
+        "hp": 3,
+        "cooldown_length": 0.5
+    },
     "sprite": {
         "layer": 0,
         "texture": "atlas/bnuuy.png",

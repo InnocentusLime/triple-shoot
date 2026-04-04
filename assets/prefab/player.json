@@ -1,6 +1,9 @@
 {
     "player": null,
-    "hp": 3,
+    "hp": {
+        "hp": 3,
+        "cooldown_length": 3.0
+    },
     "team": "Player",
     "player_arsenal": {
         "bullet_prefab": "prefab/test/bullet.json",
