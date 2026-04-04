@@ -1,6 +1,16 @@
 use crate::components::*;
 use crate::prelude::*;
 
+pub fn tick_lifetime(dt: f32, world: &mut World, cmds: &mut CommandBuffer) {
+    for (entity, lifetime) in world.query_mut::<&mut Lifetime>() {
+        if lifetime.time_left > 0.0 {
+            lifetime.time_left -= dt;
+        } else {
+            cmds.despawn(entity);
+        }
+    }
+}
+
 pub fn despawn_on_low_hp(world: &mut World, cmds: &mut CommandBuffer) {
     for (entity, hp) in world.query_mut::<&Hp>() {
         if hp.hp <= 0 {
@@ -9,7 +19,7 @@ pub fn despawn_on_low_hp(world: &mut World, cmds: &mut CommandBuffer) {
     }
 }
 
-pub fn tick(dt: f32, world: &mut World) {
+pub fn tick_hp(dt: f32, world: &mut World) {
     for (_, hp) in world.query_mut::<&mut Hp>() {
         if hp.cooldown > 0.0 {
             hp.cooldown -= dt;
@@ -17,7 +27,7 @@ pub fn tick(dt: f32, world: &mut World) {
     }
 }
 
-pub fn get_damaged(world: &mut World, collisions: &CollisionSolver) {
+pub fn do_damage(world: &mut World, collisions: &CollisionSolver) {
     for (_, (attack_team, col_q)) in &mut world.query::<(&Team, &col_query::Damage)>() {
         for collide_with in collisions.collisions_for(col_q) {
             let Ok(mut query) = world.query_one::<(&Team, &mut Hp)>(*collide_with) else {
