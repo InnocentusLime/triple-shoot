@@ -7,6 +7,9 @@ use crate::prelude::*;
 pub struct PlayerTag;
 
 #[derive(Debug, Clone, Copy, Deserialize)]
+pub struct KnockbackTag;
+
+#[derive(Debug, Clone, Copy, Deserialize)]
 pub struct ProjectileTag {
     pub speed: f32,
     #[serde(default)]
