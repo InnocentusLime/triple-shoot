@@ -3,11 +3,18 @@ use crate::prelude::*;
 
 use mimiq::util::InputTracker;
 
+#[derive(Debug, Clone, Copy)]
+pub enum WeaponId {
+    Shotgun,
+    Rifle,
+}
+
 #[derive(Debug)]
 pub struct InputModel {
     pub player_move_direction: Vec2,
     pub shoot_down: bool,
     pub player_aim_direction: Vec2,
+    pub player_weapon_request: Option<WeaponId>,
 }
 
 pub struct Input {
@@ -37,6 +44,9 @@ impl Input {
     }
 
     pub fn get_input_model(&self, world: &mut World) -> InputModel {
+        static KEY_AND_WEAPONS: [(KeyCode, WeaponId); 2] =
+            [(KeyCode::Digit1, WeaponId::Shotgun), (KeyCode::Digit2, WeaponId::Rifle)];
+
         let mut player_move_direction = Vec2::ZERO;
         if self.buttons.is_key_held(KeyCode::KeyA) {
             player_move_direction += Vec2::NEG_X;
@@ -60,8 +70,17 @@ impl Input {
             player_aim_direction = dr.normalize_or(player_aim_direction);
         }
 
-        let model =
-            InputModel { player_move_direction, shoot_down: shoot_pressed, player_aim_direction };
+        let player_weapon_request = KEY_AND_WEAPONS
+            .into_iter()
+            .find(|(key, _)| self.buttons.is_key_pressed(*key))
+            .map(|(_, x)| x);
+
+        let model = InputModel {
+            player_move_direction,
+            shoot_down: shoot_pressed,
+            player_aim_direction,
+            player_weapon_request,
+        };
         dump!("input: {model:#.2?}");
         model
     }

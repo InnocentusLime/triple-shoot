@@ -12,6 +12,10 @@
             "bullets_in_spread": 5,
             "bullet_prefab": "prefab/shotgun_bullet.json",
             "shoot_cooldown": 1.0
+        },
+        "rifle": {
+            "bullet_prefab": "prefab/rifle_bullet.json",
+            "shoot_cooldown": 1.6
         }
     },
     "transform": null,
