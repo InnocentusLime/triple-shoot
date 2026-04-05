@@ -4,6 +4,7 @@
     },
     "team": "Player",
     "transform": null,
+    "knockback_effect": null,
     "lifetime": 0.15,
     "sprite": {
         "layer": 0,

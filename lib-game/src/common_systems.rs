@@ -41,9 +41,10 @@ pub fn tick_hp(dt: f32, world: &mut World) {
 }
 
 pub fn do_damage(world: &mut World, collisions: &CollisionSolver) {
-    for (_, (tf, attack_team, col_q)) in
+    for (projectile_entity, (tf, attack_team, col_q)) in
         &mut world.query::<(&Transform, &Team, &col_query::Damage)>()
     {
+        let has_knockback = world.get::<&KnockbackTag>(projectile_entity).is_ok();
         for collide_with in collisions.collisions_for(col_q) {
             let Ok(mut query) = world.query_one::<(&Team, &mut Hp)>(*collide_with) else {
                 continue;
@@ -55,7 +56,9 @@ pub fn do_damage(world: &mut World, collisions: &CollisionSolver) {
                 continue;
             }
             hp.damage(1);
-            if let Ok(mut knock) = world.get::<&mut KnockbackState>(*collide_with) {
+            if let Ok(mut knock) = world.get::<&mut KnockbackState>(*collide_with)
+                && has_knockback
+            {
                 knock.knockback_direction = Vec2::from_angle(tf.angle);
                 knock.knockback_left = knock.knockback_length;
             };
