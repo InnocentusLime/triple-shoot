@@ -84,26 +84,38 @@ impl State for MainGame {
             .query::<(&mut Transform, &mut KinematicControl, &mut PlayerData)>();
         for (_, (tf, kin, data)) in &mut query {
             kin.dr = data.speed * dt * input_model.player_move_direction;
-            let pos = tf.pos + 8.0 * input_model.player_aim_direction;
+            let spawn_pos = tf.pos + 8.0 * input_model.player_aim_direction;
             player_pos = tf.pos;
 
-            if input_model.shoot_down && data.next_shoot <= 0.0 {
-                data.next_shoot = data.shotgun.shoot_cooldown;
+            dump!("Player weapn: {:?}", data.current_weapon);
+            dump!(
+                "Cooldown: {:.2}. Can shoot: {}",
+                data.next_shoot,
+                data.next_shoot <= 0.0
+            );
 
-                let spread_angle = data.shotgun.spread_angle.to_radians();
-                let base = -spread_angle / 2.0;
-                let delta = spread_angle / (data.shotgun.bullets_in_spread as f32);
-                for offset_idx in 0..data.shotgun.bullets_in_spread {
-                    let offset = base + (offset_idx as f32) * delta;
-                    spawn_prefab(
-                        cmds,
+            if let Some(weapon_request) = input_model.player_weapon_request
+                && data.next_shoot <= 0.0
+            {
+                data.current_weapon = weapon_request
+            }
+
+            if input_model.shoot_down && data.next_shoot <= 0.0 {
+                match data.current_weapon {
+                    WeaponId::Shotgun => shoot_shotgun(
                         resources,
-                        data.shotgun.bullet_prefab,
-                        Transform {
-                            pos,
-                            angle: input_model.player_aim_direction.to_angle() + offset,
-                        },
-                    );
+                        data,
+                        cmds,
+                        input_model.player_aim_direction,
+                        spawn_pos,
+                    ),
+                    WeaponId::Rifle => shoot_rifle(
+                        resources,
+                        data,
+                        cmds,
+                        input_model.player_aim_direction,
+                        spawn_pos,
+                    ),
                 }
             }
 
@@ -128,6 +140,44 @@ impl State for MainGame {
             }
         }
     }
+}
+
+fn shoot_shotgun(
+    resources: &Resources,
+    data: &mut PlayerData,
+    cmds: &mut CommandBuffer,
+    aim_dir: Vec2,
+    spawn_pos: Vec2,
+) {
+    data.next_shoot = data.shotgun.shoot_cooldown;
+    let spread_angle = data.shotgun.spread_angle.to_radians();
+    let base = -spread_angle / 2.0;
+    let delta = spread_angle / (data.shotgun.bullets_in_spread as f32);
+    for offset_idx in 0..data.shotgun.bullets_in_spread {
+        let offset = base + (offset_idx as f32) * delta;
+        spawn_prefab(
+            cmds,
+            resources,
+            data.shotgun.bullet_prefab,
+            Transform { pos: spawn_pos, angle: aim_dir.to_angle() + offset },
+        );
+    }
+}
+
+fn shoot_rifle(
+    resources: &Resources,
+    data: &mut PlayerData,
+    cmds: &mut CommandBuffer,
+    aim_dir: Vec2,
+    spawn_pos: Vec2,
+) {
+    data.next_shoot = data.rifle.shoot_cooldown;
+    spawn_prefab(
+        cmds,
+        resources,
+        data.rifle.bullet_prefab,
+        Transform { pos: spawn_pos, angle: aim_dir.to_angle() },
+    );
 }
 
 fn steer_dir(world: &World, this: Entity, pos: Vec2) -> Vec2 {

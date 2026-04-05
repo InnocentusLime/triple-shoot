@@ -14,7 +14,7 @@ pub mod state;
 
 pub use collisions::CollisionSolver;
 pub use components::*;
-pub use input::InputModel;
+pub use input::{InputModel, WeaponId};
 pub use prefab::spawn_prefab;
 pub use prelude::*;
 pub use state::*;

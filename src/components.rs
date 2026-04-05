@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use lib_game::{AssetKey, DeserializeWithManifestCtx, Resources};
+use lib_game::{AssetKey, DeserializeWithManifestCtx, Resources, WeaponId};
 
 use serde::Deserialize;
 
@@ -56,7 +56,9 @@ pub enum NpcAi {
 pub struct PlayerData {
     pub speed: f32,
     pub next_shoot: f32,
+    pub current_weapon: WeaponId,
     pub shotgun: ShotgunEntry,
+    pub rifle: RifleEntry,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -65,6 +67,12 @@ pub struct ShotgunEntry {
     pub shoot_cooldown: f32,
     pub bullets_in_spread: u8,
     pub spread_angle: f32,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct RifleEntry {
+    pub bullet_prefab: AssetKey,
+    pub shoot_cooldown: f32,
 }
 
 impl DeserializeWithManifestCtx<Resources> for PlayerData {
@@ -78,20 +86,29 @@ impl DeserializeWithManifestCtx<Resources> for PlayerData {
         else {
             anyhow::bail!("No such prefab: {:?}", manifest.shotgun.bullet_prefab);
         };
+        let Some(rifle_bullet_prefab) = resources.prefabs.resolve(manifest.rifle.bullet_prefab)
+        else {
+            anyhow::bail!("No such prefab: {:?}", manifest.rifle.bullet_prefab);
+        };
         Ok(PlayerData {
             speed: manifest.speed,
             next_shoot: 0.0,
+            current_weapon: WeaponId::Shotgun,
             shotgun: ShotgunEntry {
                 bullet_prefab: shotgun_bullet_prefab,
                 shoot_cooldown: manifest.shotgun.shoot_cooldown,
                 bullets_in_spread: manifest.shotgun.bullets_in_spread,
                 spread_angle: manifest.shotgun.spread_angle,
             },
+            rifle: RifleEntry {
+                bullet_prefab: rifle_bullet_prefab,
+                shoot_cooldown: manifest.rifle.shoot_cooldown,
+            },
         })
     }
 
     fn deps(manifest: Self::Manifest<'_>) -> impl Iterator<Item = &'_ Path> {
-        [manifest.shotgun.bullet_prefab].into_iter()
+        [manifest.shotgun.bullet_prefab, manifest.rifle.bullet_prefab].into_iter()
     }
 }
 
@@ -99,6 +116,8 @@ impl DeserializeWithManifestCtx<Resources> for PlayerData {
 pub struct PlayerDataManifest<'a> {
     #[serde(borrow)]
     pub shotgun: ShotgunEntryManifest<'a>,
+    #[serde(borrow)]
+    pub rifle: RifleEntryManifest<'a>,
     pub speed: f32,
 }
 
@@ -109,4 +128,11 @@ pub struct ShotgunEntryManifest<'a> {
     pub shoot_cooldown: f32,
     pub bullets_in_spread: u8,
     pub spread_angle: f32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RifleEntryManifest<'a> {
+    #[serde(borrow)]
+    pub bullet_prefab: &'a Path,
+    pub shoot_cooldown: f32,
 }
