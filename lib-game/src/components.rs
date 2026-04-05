@@ -9,6 +9,8 @@ pub struct PlayerTag;
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct ProjectileTag {
     pub speed: f32,
+    #[serde(default)]
+    pub pierce_count: u32,
 }
 
 #[derive(Debug, Clone, Copy)]
