@@ -98,12 +98,12 @@ impl DeserializeWithManifestCtx<Resources> for PlayerData {
 #[derive(Debug, Deserialize)]
 pub struct PlayerDataManifest<'a> {
     #[serde(borrow)]
-    pub shotgun: GunEntryManifest<'a>,
+    pub shotgun: ShotgunEntryManifest<'a>,
     pub speed: f32,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct GunEntryManifest<'a> {
+pub struct ShotgunEntryManifest<'a> {
     #[serde(borrow)]
     pub bullet_prefab: &'a Path,
     pub shoot_cooldown: f32,
