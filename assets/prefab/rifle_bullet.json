@@ -23,8 +23,8 @@
         "filter": []
     },
     "damage": {
-        "heavy": 0,
-        "light": 1 
+        "heavy": 1,
+        "light": 0 
     },
     "body": {
         "groups": ["Attacks"]
