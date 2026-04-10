@@ -73,6 +73,9 @@ impl Hp {
     }
 
     pub fn damage(&mut self, delta: i32) {
+        if delta <= 0 {
+            return;
+        }
         if self.cooling_down() {
             return;
         }
