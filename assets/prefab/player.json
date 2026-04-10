@@ -36,6 +36,10 @@
         "width": 16.0,
         "height": 16.0
     },
+    "defence": {
+        "heavy": 0,
+        "light": 0 
+    },
     "body": {
         "groups": ["Characters"]
     }
