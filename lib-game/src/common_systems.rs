@@ -61,14 +61,17 @@ fn dmg_formula(dmg: i32, def: i32) -> i32 {
 }
 
 pub fn do_knockback(world: &mut World, collisions: &CollisionSolver) {
-    let mut view = world.view::<(&Team, &mut KnockbackState)>();
+    let mut view = world.view::<(&Team, &mut KnockbackState, &Hp)>();
     for (_, (tf, attack_team, col_q, _)) in
         &mut world.query::<(&Transform, &Team, &col_query::Damage, &KnockbackTag)>()
     {
         for collide_with in collisions.collisions_for(col_q) {
-            let Some((collided_team, knock)) = view.get_mut(*collide_with) else {
+            let Some((collided_team, knock, hp)) = view.get_mut(*collide_with) else {
                 continue;
             };
+            if !hp.cooling_down() {
+                continue;
+            }
             if *collided_team == *attack_team {
                 continue;
             }
