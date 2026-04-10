@@ -210,8 +210,8 @@ impl App {
 
         self.col_solver
             .compute_collisions(&mut self.resources.world);
-        common_systems::do_knockback(&mut self.resources.world, &self.col_solver);
         common_systems::do_damage(&mut self.resources.world, &self.col_solver);
+        common_systems::do_knockback(&mut self.resources.world, &self.col_solver);
         projectile::impact(&mut self.resources.world, &self.col_solver, &mut self.cmds);
         common_systems::despawn_on_low_hp(&mut self.resources.world, &mut self.cmds);
 
