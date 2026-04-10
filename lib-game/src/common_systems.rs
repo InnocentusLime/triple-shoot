@@ -41,21 +41,21 @@ pub fn tick_hp(dt: f32, world: &mut World) {
 }
 
 pub fn do_damage(world: &mut World, collisions: &CollisionSolver) {
-    for (projectile_entity, (tf, attack_team, col_q)) in
-        &mut world.query::<(&Transform, &Team, &col_query::Damage)>()
+    for (projectile_entity, (tf, attack_team, col_q, dmg)) in
+        &mut world.query::<(&Transform, &Team, &col_query::Damage, &Damage)>()
     {
         let has_knockback = world.get::<&KnockbackTag>(projectile_entity).is_ok();
         for collide_with in collisions.collisions_for(col_q) {
-            let Ok(mut query) = world.query_one::<(&Team, &mut Hp)>(*collide_with) else {
+            let Ok(mut query) = world.query_one::<(&Team, &mut Hp, &Defence)>(*collide_with) else {
                 continue;
             };
-            let Some((collided_team, hp)) = query.get() else {
+            let Some((collided_team, hp, def)) = query.get() else {
                 continue;
             };
             if *collided_team == *attack_team {
                 continue;
             }
-            hp.damage(1);
+            hp.damage(dmg_formula(dmg.heavy, def.heavy) + dmg_formula(dmg.light, def.light));
             if let Ok(mut knock) = world.get::<&mut KnockbackState>(*collide_with)
                 && has_knockback
             {
@@ -64,4 +64,8 @@ pub fn do_damage(world: &mut World, collisions: &CollisionSolver) {
             };
         }
     }
+}
+
+fn dmg_formula(dmg: i32, def: i32) -> i32 {
+    ((dmg as f32) * (1.0 - def as f32 / 100.0)) as i32
 }

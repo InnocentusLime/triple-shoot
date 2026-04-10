@@ -29,6 +29,14 @@
         "groups": ["Characters"],
         "filter": []
     },
+    "damage": {
+        "heavy": 0,
+        "light": 1 
+    },
+    "defence": {
+        "heavy": 90,
+        "light": 0 
+    },
     "body": {
         "groups": ["Characters"]
     },

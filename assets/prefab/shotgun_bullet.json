@@ -22,6 +22,10 @@
         "groups": ["Characters"],
         "filter": []
     },
+    "damage": {
+        "heavy": 0,
+        "light": 1 
+    },
     "body": {
         "groups": ["Attacks"]
     },

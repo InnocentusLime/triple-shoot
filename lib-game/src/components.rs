@@ -7,6 +7,22 @@ use crate::prelude::*;
 pub struct PlayerTag;
 
 #[derive(Debug, Clone, Copy, Deserialize)]
+pub struct Damage {
+    #[serde(default)]
+    pub heavy: i32,
+    #[serde(default)]
+    pub light: i32,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct Defence {
+    #[serde(default)]
+    pub heavy: i32,
+    #[serde(default)]
+    pub light: i32,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
 pub struct KnockbackTag;
 
 #[derive(Debug, Clone, Copy, Deserialize)]
