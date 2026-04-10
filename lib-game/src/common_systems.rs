@@ -41,10 +41,8 @@ pub fn tick_hp(dt: f32, world: &mut World) {
 }
 
 pub fn do_damage(world: &mut World, collisions: &CollisionSolver) {
-    for (projectile_entity, (tf, attack_team, col_q, dmg)) in
-        &mut world.query::<(&Transform, &Team, &col_query::Damage, &Damage)>()
+    for (_, (attack_team, col_q, dmg)) in &mut world.query::<(&Team, &col_query::Damage, &Damage)>()
     {
-        let has_knockback = world.get::<&KnockbackTag>(projectile_entity).is_ok();
         for collide_with in collisions.collisions_for(col_q) {
             let Ok(mut query) = world.query_one::<(&Team, &mut Hp, &Defence)>(*collide_with) else {
                 continue;
@@ -56,16 +54,31 @@ pub fn do_damage(world: &mut World, collisions: &CollisionSolver) {
                 continue;
             }
             hp.damage(dmg_formula(dmg.heavy, def.heavy) + dmg_formula(dmg.light, def.light));
-            if let Ok(mut knock) = world.get::<&mut KnockbackState>(*collide_with)
-                && has_knockback
-            {
-                knock.knockback_direction = Vec2::from_angle(tf.angle);
-                knock.knockback_left = knock.knockback_length;
-            };
         }
     }
 }
 
 fn dmg_formula(dmg: i32, def: i32) -> i32 {
     ((dmg as f32) * (1.0 - def as f32 / 100.0)) as i32
+}
+
+pub fn do_knockback(world: &mut World, collisions: &CollisionSolver) {
+    for (_, (tf, attack_team, col_q, _)) in
+        &mut world.query::<(&Transform, &Team, &col_query::Damage, &KnockbackTag)>()
+    {
+        for collide_with in collisions.collisions_for(col_q) {
+            let Ok(mut query) = world.query_one::<(&Team, &mut KnockbackState)>(*collide_with)
+            else {
+                continue;
+            };
+            let Some((collided_team, knock)) = query.get() else {
+                continue;
+            };
+            if *collided_team == *attack_team {
+                continue;
+            }
+            knock.knockback_direction = Vec2::from_angle(tf.angle);
+            knock.knockback_left = knock.knockback_length;
+        }
+    }
 }
