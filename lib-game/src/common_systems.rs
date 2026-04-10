@@ -60,6 +60,7 @@ fn dmg_formula(dmg: i32, def: i32) -> i32 {
     ((dmg as f32) * (1.0 - def as f32 / 100.0)) as i32
 }
 
+// TODO: consider scaling knockback according to the defence
 pub fn do_knockback(world: &mut World, collisions: &CollisionSolver) {
     let mut view = world.view::<(&Team, &mut KnockbackState, &Hp)>();
     for (_, (tf, attack_team, col_q, _)) in

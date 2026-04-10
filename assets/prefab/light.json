@@ -1,0 +1,48 @@
+{
+    "team": "Enemy",
+    "npc": {
+        "ai": "JustFollowPlayer",
+        "speed": 24.0
+    },
+    "transform": null,
+    "hp": {
+        "hp": 80,
+        "cooldown_length": 0.5
+    },
+    "knockback": {
+        "knockback_length": 1.0,
+        "knockback_speed": 64.0
+    },
+    "sprite": {
+        "layer": 0,
+        "texture": "atlas/bnuuy.png",
+        "sort_offset": 0.0,
+        "local_offset": [0.0, 0.0],
+        "tex_rect_pos": [1, 1],
+        "tex_rect_size": [16, 16]
+    },
+    "kinematic": {
+        "collision": ["Level"],
+        "slide": true
+    },
+    "damage_query": {
+        "groups": ["Characters"],
+        "filter": []
+    },
+    "damage": {
+        "heavy": 0,
+        "light": 1 
+    },
+    "defence": {
+        "heavy": 85,
+        "light": 0 
+    },
+    "body": {
+        "groups": ["Characters"]
+    },
+    "shape": {
+        "type": "Rect",
+        "width": 16.0,
+        "height": 16.0
+    }
+}
