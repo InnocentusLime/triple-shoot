@@ -5,6 +5,7 @@
     },
     "team": "Player",
     "transform": null,
+    "knockback_effect": null,
     "lifetime": 1.0,
     "sprite": {
         "layer": 0,
@@ -23,7 +24,7 @@
         "filter": []
     },
     "damage": {
-        "heavy": 1,
+        "heavy": 30,
         "light": 0 
     },
     "body": {

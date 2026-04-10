@@ -24,7 +24,7 @@
     },
     "damage": {
         "heavy": 0,
-        "light": 1 
+        "light": 20 
     },
     "body": {
         "groups": ["Attacks"]
