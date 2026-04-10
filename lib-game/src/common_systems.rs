@@ -41,13 +41,11 @@ pub fn tick_hp(dt: f32, world: &mut World) {
 }
 
 pub fn do_damage(world: &mut World, collisions: &CollisionSolver) {
+    let mut view = world.view::<(&Team, &mut Hp, &Defence)>();
     for (_, (attack_team, col_q, dmg)) in &mut world.query::<(&Team, &col_query::Damage, &Damage)>()
     {
         for collide_with in collisions.collisions_for(col_q) {
-            let Ok(mut query) = world.query_one::<(&Team, &mut Hp, &Defence)>(*collide_with) else {
-                continue;
-            };
-            let Some((collided_team, hp, def)) = query.get() else {
+            let Some((collided_team, hp, def)) = view.get_mut(*collide_with) else {
                 continue;
             };
             if *collided_team == *attack_team {
@@ -63,15 +61,12 @@ fn dmg_formula(dmg: i32, def: i32) -> i32 {
 }
 
 pub fn do_knockback(world: &mut World, collisions: &CollisionSolver) {
+    let mut view = world.view::<(&Team, &mut KnockbackState)>();
     for (_, (tf, attack_team, col_q, _)) in
         &mut world.query::<(&Transform, &Team, &col_query::Damage, &KnockbackTag)>()
     {
         for collide_with in collisions.collisions_for(col_q) {
-            let Ok(mut query) = world.query_one::<(&Team, &mut KnockbackState)>(*collide_with)
-            else {
-                continue;
-            };
-            let Some((collided_team, knock)) = query.get() else {
+            let Some((collided_team, knock)) = view.get_mut(*collide_with) else {
                 continue;
             };
             if *collided_team == *attack_team {
