@@ -1,7 +1,7 @@
 {
     "projectile": {
         "speed": 1024.0,
-        "pierce_count": 5
+        "pierce_count": 10
     },
     "team": "Player",
     "transform": null,
