@@ -6,7 +6,7 @@
     },
     "team": "Player",
     "player_data": {
-        "speed": 32.0,
+        "speed": 64.0,
         "shotgun": {
             "spread_angle": 60.0,
             "bullets_in_spread": 5,
