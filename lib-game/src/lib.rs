@@ -6,6 +6,7 @@ mod prefab;
 mod prelude;
 mod projectile;
 mod render;
+mod resolution;
 
 #[cfg(feature = "dbg")]
 pub mod dbg;
@@ -250,15 +251,28 @@ pub struct Resources {
     pub gl_ctx: Rc<mimiq::GlContext>,
     pub sprite_pipeline: mimiq::Pipeline<mimiq::util::BasicSpritePipelineMeta>,
     pub basic_pipeline: mimiq::Pipeline<mimiq::util::BasicPipelineMeta>,
+    pub gamescreen: mimiq::RenderPass,
     pub textures: AssetContainer<mimiq::Texture2D>,
     pub prefabs: AssetContainer<BuiltEntityClone>,
 }
 
 impl Resources {
     pub fn new(gl_ctx: Rc<mimiq::GlContext>) -> Self {
+        let gamescreen_texture = gl_ctx.new_empty_texture(
+            crate::resolution::SCREEN_WIDTH,
+            crate::resolution::SCREEN_HEIGHT,
+            mimiq::Texture2DParams {
+                internal_format: mimiq::Texture2DFormat::RGBA8,
+                min_filter: mimiq::FilterMode::Nearest,
+                mag_filter: mimiq::FilterMode::Nearest,
+                ..Default::default()
+            },
+        );
+
         Resources {
             world: World::new(),
             sprite_pipeline: gl_ctx.new_pipeline(),
+            gamescreen: gl_ctx.new_render_pass(vec![gamescreen_texture], None),
             basic_pipeline: gl_ctx.new_pipeline(),
             textures: AssetContainer::new(),
             prefabs: AssetContainer::new(),

@@ -18,6 +18,7 @@ pub struct InputModel {
 }
 
 pub struct Input {
+    screen_to_world: Mat3,
     /// tracks the mouse cursor position in world coordinates.
     cursor_pos: Vec2,
     buttons: InputTracker,
@@ -25,7 +26,11 @@ pub struct Input {
 
 impl Input {
     pub fn new() -> Self {
-        Input { cursor_pos: Vec2::ZERO, buttons: InputTracker::new() }
+        Input {
+            cursor_pos: Vec2::ZERO,
+            buttons: InputTracker::new(),
+            screen_to_world: Mat3::IDENTITY,
+        }
     }
 
     pub fn update(&mut self) {
@@ -37,7 +42,12 @@ impl Input {
         self.buttons.handle_event(event);
         match event {
             WindowEvent::CursorMoved { position, .. } => {
-                self.cursor_pos = vec2(position.x as f32, position.y as f32);
+                let cursor_pos = Vec2::from_array((*position).into());
+                self.cursor_pos = self.screen_to_world.transform_point2(cursor_pos);
+            }
+            WindowEvent::Resized(native) => {
+                self.screen_to_world =
+                    crate::resolution::native_to_screen(native.width, native.height);
             }
             _ => (),
         }

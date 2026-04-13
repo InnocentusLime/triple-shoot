@@ -957,6 +957,7 @@ name = "lib-game"
 version = "0.23.0"
 dependencies = [
  "anyhow",
+ "bytemuck",
  "hashbrown 0.14.5",
  "hecs",
  "lib-asset",
