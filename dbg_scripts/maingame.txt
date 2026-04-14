@@ -1,0 +1,5 @@
+spawn wall_horiz 240 35
+spawn wall_horiz 240 235
+spawn wall_vert 140 135
+spawn wall_vert 340 135
+spawn player 240 135
