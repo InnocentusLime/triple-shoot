@@ -1,2 +1,4 @@
 lass prefab/light.json
 lass prefab/heavy.json
+lass prefab/wall_horiz.json
+lass prefab/wall_vert.json
