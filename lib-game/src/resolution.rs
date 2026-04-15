@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
-pub const SCREEN_WIDTH: u32 = 480;
-pub const SCREEN_HEIGHT: u32 = 270;
+pub const SCREEN_WIDTH: u32 = 960;
+pub const SCREEN_HEIGHT: u32 = 540;
 
 /// Returns a matrix for converting native coordinates into screen (world) coordinates.
 pub fn native_to_screen(native_width: u32, native_height: u32) -> Mat3 {
