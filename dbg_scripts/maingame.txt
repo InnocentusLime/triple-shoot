@@ -1,6 +1,0 @@
-spawn wall_horiz 480 70
-spawn wall_horiz 480 470
-spawn wall_vert 280 270
-spawn wall_vert 680 270
-spawn player 480 270
-dde phys
