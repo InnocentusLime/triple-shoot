@@ -18,6 +18,7 @@ pub use components::*;
 pub use input::{InputModel, WeaponId};
 pub use prefab::spawn_prefab;
 pub use prelude::*;
+pub use resolution::{SCREEN_HEIGHT, SCREEN_WIDTH};
 pub use state::*;
 
 use std::borrow::Cow;
@@ -147,7 +148,8 @@ impl mimiq::EventHandler<AppInit> for App {
         if is_state_ready {
             info!("queued state ready: {:?}", queued_state.name);
             self.resources.world.clear();
-            self.state = (queued_state.constructor)(&mut self.resources);
+            self.state = (queued_state.constructor)(&mut self.resources, &mut self.cmds);
+            self.cmds.run_on(&mut self.resources.world);
         } else {
             self.queued_state = Some(queued_state)
         }
@@ -254,6 +256,8 @@ pub struct Resources {
     pub gamescreen: mimiq::RenderPass,
     pub textures: AssetContainer<mimiq::Texture2D>,
     pub prefabs: AssetContainer<BuiltEntityClone>,
+    pub game_field_width: f32,
+    pub game_field_height: f32,
 }
 
 impl Resources {
@@ -277,6 +281,8 @@ impl Resources {
             textures: AssetContainer::new(),
             prefabs: AssetContainer::new(),
             gl_ctx,
+            game_field_width: 400.0,
+            game_field_height: 400.0,
         }
     }
 

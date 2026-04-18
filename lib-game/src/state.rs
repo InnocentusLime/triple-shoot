@@ -12,7 +12,7 @@ pub struct StateRequest {
     pub dependencies: Vec<PathBuf>,
 }
 
-type StateConstructor = Box<dyn FnOnce(&mut Resources) -> Box<dyn State>>;
+type StateConstructor = Box<dyn FnOnce(&mut Resources, &mut CommandBuffer) -> Box<dyn State>>;
 
 /// The trait containing all callbacks for the game,
 /// that is run inside the App. It is usually best to

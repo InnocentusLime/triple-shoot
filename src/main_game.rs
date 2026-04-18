@@ -10,11 +10,44 @@ impl MainGame {
         StateRequest {
             name: "main game",
             constructor: Box::new(Self::new_state),
-            dependencies: vec!["prefab/player.json".into()],
+            dependencies: vec![
+                "prefab/player.json".into(),
+                "prefab/wall_horiz.json".into(),
+                "prefab/wall_vert.json".into(),
+            ],
         }
     }
 
-    pub fn new_state(_resources: &mut Resources) -> Box<dyn State> {
+    pub fn new_state(resources: &mut Resources, cmds: &mut CommandBuffer) -> Box<dyn State> {
+        let wall_horiz = resources.prefabs.resolve("prefab/wall_horiz.json").unwrap();
+        let wall_vert = resources.prefabs.resolve("prefab/wall_vert.json").unwrap();
+        let center = vec2(SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32) / 2.0;
+        let play_off = vec2(resources.game_field_width, resources.game_field_height) * 0.5;
+
+        spawn_prefab(
+            cmds,
+            resources,
+            wall_horiz,
+            Transform::from_pos(center - play_off * Vec2::Y),
+        );
+        spawn_prefab(
+            cmds,
+            resources,
+            wall_horiz,
+            Transform::from_pos(center + play_off * Vec2::Y),
+        );
+        spawn_prefab(
+            cmds,
+            resources,
+            wall_vert,
+            Transform::from_pos(center - play_off * Vec2::X),
+        );
+        spawn_prefab(
+            cmds,
+            resources,
+            wall_vert,
+            Transform::from_pos(center + play_off * Vec2::X),
+        );
         Box::new(MainGame { do_player_controls: true, do_ai: true })
     }
 }
