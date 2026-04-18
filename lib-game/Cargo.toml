@@ -12,6 +12,7 @@ anyhow = { workspace = true }
 hecs = { workspace = true }
 mimiq = { workspace = true }
 hashbrown = { workspace = true }
+fastrand = { workspace = true }
 lib-col = { path = "../lib-col" }
 lib-asset = { path = "../lib-asset" }
 

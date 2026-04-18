@@ -18,7 +18,6 @@ pub use components::*;
 pub use input::{InputModel, WeaponId};
 pub use prefab::spawn_prefab;
 pub use prelude::*;
-pub use resolution::{SCREEN_HEIGHT, SCREEN_WIDTH};
 pub use state::*;
 
 use std::borrow::Cow;
@@ -200,6 +199,8 @@ impl App {
         let input_model = self.input.get_input_model(&mut self.resources.world);
         self.state
             .input(dt, &input_model, &mut self.resources, &mut self.cmds);
+        common_systems::tick_mob_spawners(dt, &mut self.resources);
+        common_systems::tick_global_spawn(dt, &mut self.resources, &mut self.cmds);
         projectile::step(dt, &mut self.resources.world);
         common_systems::tick_knockback(dt, &mut self.resources.world);
 

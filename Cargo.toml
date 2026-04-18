@@ -12,17 +12,18 @@ clap = { version = "4.5.53", features = ["derive"], optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
+fastrand = { workspace = true }
 # Internal deps
 lib-col = { path = "./lib-col"}
 lib-game = { path = "./lib-game" }
 lib-asset = { path = "./lib-asset" }
-fastrand = { version = "2", features = ["std", "js"] }
 
 [features]
 dbg = ["lib-game/dbg"]
 dev-env = ["lib-game/dev-env", "dep:clap"]
 
 [workspace.dependencies]
+fastrand = { version = "2", features = ["std", "js"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
 hecs = { version = "0.10.5", features = ["macros"] }

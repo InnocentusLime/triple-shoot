@@ -1,6 +1,0 @@
-{
-    "enemy_spawner": {
-        "spawn_time": 2.0,
-        "enemy_prefab": "prefab/test/dumemy.json"   
-    }
-}
