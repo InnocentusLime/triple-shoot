@@ -1,3 +1,5 @@
+use std::path::Path;
+
 pub use crate::collisions::components::*;
 pub use crate::render::components::*;
 
@@ -82,6 +84,61 @@ impl Hp {
         self.hp -= delta;
         self.cooldown = self.cooldown_length;
     }
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct SpawnDirector {
+    pub spawn_time: f32,
+    #[serde(skip)]
+    pub next_spawn: f32,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct MobSpawner {
+    pub quota: u32,
+    pub cooldown_length: f32,
+    pub cooldown: f32,
+    pub weight: u32,
+    pub prefab: AssetKey,
+}
+
+impl MobSpawner {
+    pub fn can_spawn(&self) -> bool {
+        self.cooldown <= 0.0 && self.quota > 0
+    }
+}
+
+impl DeserializeWithManifestCtx<Resources> for MobSpawner {
+    type Manifest<'a> = MobSpawnerManifest<'a>;
+
+    fn from_manifest(
+        resources: &mut Resources,
+        manifest: Self::Manifest<'_>,
+    ) -> anyhow::Result<Self> {
+        let Some(prefab) = resources.prefabs.resolve(manifest.prefab) else {
+            anyhow::bail!("No such prefab: {:?}", manifest.prefab);
+        };
+        Ok(MobSpawner {
+            quota: manifest.quota,
+            cooldown_length: manifest.cooldown_length,
+            cooldown: 0.0,
+            weight: manifest.weight,
+            prefab,
+        })
+    }
+
+    fn deps(manifest: Self::Manifest<'_>) -> impl Iterator<Item = &'_ Path> {
+        [manifest.prefab].into_iter()
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MobSpawnerManifest<'a> {
+    pub quota: u32,
+    pub cooldown_length: f32,
+    pub weight: u32,
+    #[serde(borrow)]
+    pub prefab: &'a Path,
 }
 
 #[derive(Debug, Clone, Copy)]

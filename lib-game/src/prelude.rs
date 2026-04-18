@@ -11,4 +11,5 @@ pub use mimiq::winit::window::Window;
 pub use serde::Deserialize;
 
 pub use crate::collisions::CollisionSolver;
+pub use crate::resolution::{SCREEN_HEIGHT, SCREEN_WIDTH};
 pub use crate::{Resources, dump};
