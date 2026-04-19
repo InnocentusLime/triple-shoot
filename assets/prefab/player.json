@@ -8,12 +8,14 @@
     "player_data": {
         "speed": 64.0,
         "shotgun": {
+            "max_ammo": 3,
             "spread_angle": 60.0,
             "bullets_in_spread": 5,
             "bullet_prefab": "prefab/shotgun_bullet.json",
             "shoot_cooldown": 1.0
         },
         "rifle": {
+            "max_ammo": 3,
             "spread_angle": 0.0,
             "bullets_in_spread": 1,
             "bullet_prefab": "prefab/rifle_bullet.json",

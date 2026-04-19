@@ -99,6 +99,8 @@ impl State for MainGame {
             player_pos = tf.pos;
 
             dump!("Player weapn: {:?}", data.current_weapon);
+            dump!("Shotgun: {} / {}", data.shotgun.ammo, data.shotgun.max_ammo);
+            dump!("Rifle: {} / {}", data.rifle.ammo, data.rifle.max_ammo);
             dump!(
                 "Cooldown: {:.2}. Can shoot: {}",
                 data.next_shoot,
@@ -152,6 +154,9 @@ fn shoot(
     spawn_pos: Vec2,
 ) {
     let gun = data.get_gun(data.current_weapon);
+    if gun.ammo == 0 {
+        return;
+    }
 
     let spread_angle = gun.spread_angle.to_radians();
     let base = -spread_angle / 2.0;
@@ -167,6 +172,7 @@ fn shoot(
     }
 
     data.next_shoot = gun.shoot_cooldown;
+    data.set_gun(data.current_weapon, GunEntry { ammo: gun.ammo - 1, ..gun });
 }
 
 fn steer_dir(world: &World, this: Entity, pos: Vec2) -> Vec2 {
