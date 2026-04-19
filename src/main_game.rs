@@ -75,10 +75,25 @@ impl State for MainGame {
     fn update(
         &mut self,
         _dt: f32,
-        _resources: &mut Resources,
+        resources: &mut Resources,
         _collisions: &CollisionSolver,
-        _cmds: &mut CommandBuffer,
+        cmds: &mut CommandBuffer,
     ) -> Option<StateRequest> {
+        for (ent, (col_q, ammo)) in &mut resources
+            .world
+            .query::<(&col_query::Interaction, &AmmoPickup)>()
+        {
+            if !col_q.has_collided() {
+                continue;
+            }
+            cmds.despawn(ent);
+            for (_, data) in &mut resources.world.query::<&mut PlayerData>() {
+                let gun = data.get_gun(ammo.weapon);
+                let new_ammo = gun.max_ammo.min(gun.ammo + ammo.value);
+                data.set_gun(ammo.weapon, GunEntry { ammo: new_ammo, ..gun });
+            }
+        }
+
         None
     }
 

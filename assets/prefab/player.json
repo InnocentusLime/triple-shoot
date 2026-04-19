@@ -45,6 +45,6 @@
         "light": 0 
     },
     "body": {
-        "groups": ["Characters"]
+        "groups": ["Characters", "Player"]
     }
 }

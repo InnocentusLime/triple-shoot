@@ -7,6 +7,13 @@ use serde::Deserialize;
 pub fn register_components(prefab_factory: &mut lib_game::PrefabFactory<Resources>) {
     prefab_factory.register_component_with_constructor_ctx::<PlayerData>("player_data");
     prefab_factory.register_component::<NpcAi>("npc");
+    prefab_factory.register_component::<AmmoPickup>("ammo_pickup");
+}
+
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
+pub struct AmmoPickup {
+    pub weapon: WeaponId,
+    pub value: u32,
 }
 
 #[derive(Debug, Clone, Copy, serde::Deserialize)]
@@ -46,7 +53,6 @@ pub struct GunEntry {
     pub shoot_cooldown: f32,
     pub bullets_in_spread: u8,
     pub spread_angle: f32,
-    #[allow(dead_code)]
     pub max_ammo: u32,
     pub ammo: u32,
 }

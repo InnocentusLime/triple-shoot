@@ -1,0 +1,24 @@
+{
+    "transform": null,
+    "sprite": {
+        "layer": 0,
+        "texture": "atlas/bnuuy.png",
+        "sort_offset": 0.0,
+        "local_offset": [0.0, 0.0],
+        "tex_rect_pos": [478, 30],
+        "tex_rect_size": [18, 17]
+    },
+    "ammo_pickup": {
+        "weapon": "Shotgun",
+        "value": 1
+    },
+    "interaction_query": {
+        "groups": ["Player"],
+        "filter": []
+    },
+    "shape": {
+        "type": "Rect",
+        "width": 16.0,
+        "height": 16.0
+    }
+}
