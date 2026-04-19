@@ -3,7 +3,7 @@ use crate::prelude::*;
 
 use mimiq::util::InputTracker;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
 pub enum WeaponId {
     Shotgun,
     Rifle,
