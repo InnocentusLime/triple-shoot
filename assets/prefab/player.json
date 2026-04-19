@@ -14,6 +14,8 @@
             "shoot_cooldown": 1.0
         },
         "rifle": {
+            "spread_angle": 0.0,
+            "bullets_in_spread": 1,
             "bullet_prefab": "prefab/rifle_bullet.json",
             "shoot_cooldown": 1.6
         }

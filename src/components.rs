@@ -20,22 +20,25 @@ pub struct PlayerData {
     pub speed: f32,
     pub next_shoot: f32,
     pub current_weapon: WeaponId,
-    pub shotgun: ShotgunEntry,
-    pub rifle: RifleEntry,
+    pub shotgun: GunEntry,
+    pub rifle: GunEntry,
+}
+
+impl PlayerData {
+    pub fn get_gun(&self, gun_id: WeaponId) -> GunEntry {
+        match gun_id {
+            WeaponId::Shotgun => self.shotgun,
+            WeaponId::Rifle => self.rifle,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct ShotgunEntry {
+pub struct GunEntry {
     pub bullet_prefab: AssetKey,
     pub shoot_cooldown: f32,
     pub bullets_in_spread: u8,
     pub spread_angle: f32,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct RifleEntry {
-    pub bullet_prefab: AssetKey,
-    pub shoot_cooldown: f32,
 }
 
 impl DeserializeWithManifestCtx<Resources> for PlayerData {
@@ -57,15 +60,17 @@ impl DeserializeWithManifestCtx<Resources> for PlayerData {
             speed: manifest.speed,
             next_shoot: 0.0,
             current_weapon: WeaponId::Shotgun,
-            shotgun: ShotgunEntry {
+            shotgun: GunEntry {
                 bullet_prefab: shotgun_bullet_prefab,
                 shoot_cooldown: manifest.shotgun.shoot_cooldown,
                 bullets_in_spread: manifest.shotgun.bullets_in_spread,
                 spread_angle: manifest.shotgun.spread_angle,
             },
-            rifle: RifleEntry {
+            rifle: GunEntry {
                 bullet_prefab: rifle_bullet_prefab,
                 shoot_cooldown: manifest.rifle.shoot_cooldown,
+                bullets_in_spread: manifest.rifle.bullets_in_spread,
+                spread_angle: manifest.rifle.spread_angle,
             },
         })
     }
@@ -78,24 +83,17 @@ impl DeserializeWithManifestCtx<Resources> for PlayerData {
 #[derive(Debug, Deserialize)]
 pub struct PlayerDataManifest<'a> {
     #[serde(borrow)]
-    pub shotgun: ShotgunEntryManifest<'a>,
+    pub shotgun: GunEntryManifest<'a>,
     #[serde(borrow)]
-    pub rifle: RifleEntryManifest<'a>,
+    pub rifle: GunEntryManifest<'a>,
     pub speed: f32,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ShotgunEntryManifest<'a> {
+pub struct GunEntryManifest<'a> {
     #[serde(borrow)]
     pub bullet_prefab: &'a Path,
     pub shoot_cooldown: f32,
     pub bullets_in_spread: u8,
     pub spread_angle: f32,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct RifleEntryManifest<'a> {
-    #[serde(borrow)]
-    pub bullet_prefab: &'a Path,
-    pub shoot_cooldown: f32,
 }
