@@ -31,6 +31,13 @@ impl PlayerData {
             WeaponId::Rifle => self.rifle,
         }
     }
+
+    pub fn set_gun(&mut self, gun_id: WeaponId, new_gun: GunEntry) {
+        match gun_id {
+            WeaponId::Shotgun => self.shotgun = new_gun,
+            WeaponId::Rifle => self.rifle = new_gun,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -39,6 +46,9 @@ pub struct GunEntry {
     pub shoot_cooldown: f32,
     pub bullets_in_spread: u8,
     pub spread_angle: f32,
+    #[allow(dead_code)]
+    pub max_ammo: u32,
+    pub ammo: u32,
 }
 
 impl DeserializeWithManifestCtx<Resources> for PlayerData {
@@ -65,12 +75,16 @@ impl DeserializeWithManifestCtx<Resources> for PlayerData {
                 shoot_cooldown: manifest.shotgun.shoot_cooldown,
                 bullets_in_spread: manifest.shotgun.bullets_in_spread,
                 spread_angle: manifest.shotgun.spread_angle,
+                max_ammo: manifest.shotgun.max_ammo,
+                ammo: manifest.shotgun.max_ammo,
             },
             rifle: GunEntry {
                 bullet_prefab: rifle_bullet_prefab,
                 shoot_cooldown: manifest.rifle.shoot_cooldown,
                 bullets_in_spread: manifest.rifle.bullets_in_spread,
                 spread_angle: manifest.rifle.spread_angle,
+                max_ammo: manifest.rifle.max_ammo,
+                ammo: manifest.rifle.max_ammo,
             },
         })
     }
@@ -96,4 +110,5 @@ pub struct GunEntryManifest<'a> {
     pub shoot_cooldown: f32,
     pub bullets_in_spread: u8,
     pub spread_angle: f32,
+    pub max_ammo: u32,
 }
