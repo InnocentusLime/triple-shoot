@@ -8,11 +8,10 @@ use crate::components::*;
 use crate::prelude::*;
 use crate::{App, DebugCommand};
 
+use anyhow::Context;
 pub use cmd::*;
 use mimiq::egui::TextBuffer;
 pub use screendump::*;
-
-use mimiq::egui::Context;
 
 pub(crate) struct DebugStuff {
     pub cmd_center: CommandCenter,
@@ -70,7 +69,7 @@ impl App {
         dump!("Total archetypes: {total_archetypes}");
     }
 
-    pub fn debug_ui(&mut self, egui_ctx: &Context) {
+    pub fn debug_ui(&mut self, egui_ctx: &mimiq::egui::Context) {
         if let Some(cmd) = self.debug.cmd_center.show(egui_ctx) {
             if let Err(err) = self.handle_command(&cmd) {
                 error!("fail: {err:#}");
@@ -125,6 +124,28 @@ impl App {
                 let entity = self.resolve_entity(&cmd.args[0])?;
                 self.resources.world.despawn(entity)?;
                 info!("Despawned entity {entity:?}")
+            }
+            "spof" => {
+                if cmd.args.len() < 2 {
+                    anyhow::bail!("Not enough args");
+                }
+
+                let director = self
+                    .resolve_entity(&cmd.args[0])
+                    .context("director (arg 1)")?;
+                let spawner = self
+                    .resolve_entity(&cmd.args[1])
+                    .context("spawner (arg 2)")?;
+
+                anyhow::ensure!(
+                    self.resources.world.satisfies::<&SpawnerOf>(spawner)?,
+                    "{spawner:?} is not a spawner",
+                );
+
+                self.resources
+                    .world
+                    .insert_one(spawner, SpawnerOf { director })?;
+                info!("Spawner {spawner:?} is now controlled by {director:?}")
             }
             "spawn" => {
                 if cmd.args.len() < 3 {
