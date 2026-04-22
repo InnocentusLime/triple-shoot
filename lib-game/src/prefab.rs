@@ -10,13 +10,14 @@ pub fn spawn_prefab(
     resources: &Resources,
     prefab: AssetKey,
     tf: Transform,
-) {
+) -> Entity {
     let prefab = resources.prefabs.get(prefab).expect("Dangling prefab key");
     let ent = resources.world.reserve_entity();
     cmds.insert(ent, prefab);
     if prefab.has::<Transform>() {
         cmds.insert_one(ent, tf);
     }
+    ent
 }
 
 pub fn register_libgame_components(prefab_factory: &mut PrefabFactory<Resources>) {
