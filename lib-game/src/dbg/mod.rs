@@ -117,6 +117,15 @@ impl App {
                 self.render.enabled_debug_draws.remove(dd_name);
                 info!("Disabled debug draw {dd_name:?}");
             }
+            "despa" => {
+                if cmd.args.is_empty() {
+                    anyhow::bail!("Not enough args");
+                }
+
+                let entity = self.resolve_entity(&cmd.args[0])?;
+                self.resources.world.despawn(entity)?;
+                info!("Despawned entity {entity:?}")
+            }
             "spawn" => {
                 if cmd.args.len() < 3 {
                     anyhow::bail!("Not enough args");
@@ -190,6 +199,23 @@ impl App {
         }
 
         Ok(())
+    }
+
+    fn resolve_entity(&self, s: &str) -> anyhow::Result<Entity> {
+        let Ok(id_raw) = s.trim().parse::<u32>() else {
+            anyhow::bail!("Expected an integer");
+        };
+        let Some(entity) = self
+            .resources
+            .world
+            .iter()
+            .map(|x| x.entity())
+            .find(|x| x.id() == id_raw)
+        else {
+            anyhow::bail!("No such entity");
+        };
+
+        Ok(entity)
     }
 }
 
