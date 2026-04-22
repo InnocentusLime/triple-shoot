@@ -93,6 +93,12 @@ pub struct SpawnDirector {
     pub next_spawn: f32,
 }
 
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct SpawnerOf {
+    #[serde(skip, default = "entity_dangling")]
+    pub director: Entity,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct MobSpawner {
     pub quota: u32,

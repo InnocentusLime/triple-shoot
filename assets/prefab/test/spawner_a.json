@@ -4,5 +4,6 @@
         "cooldown_length": 3.0,
         "weight": 1,
         "prefab": "prefab/light.json"
-    }
+    },
+    "spawner_of": {}
 }

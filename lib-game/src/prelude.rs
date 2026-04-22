@@ -13,3 +13,7 @@ pub use serde::Deserialize;
 pub use crate::collisions::CollisionSolver;
 pub use crate::resolution::{SCREEN_HEIGHT, SCREEN_WIDTH};
 pub use crate::{Resources, dump};
+
+pub const fn entity_dangling() -> Entity {
+    Entity::DANGLING
+}
