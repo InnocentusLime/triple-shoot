@@ -1,5 +1,5 @@
 {
-    "spawn_director": {
+    "spawn_at_edges_director": {
         "spawn_time": 1.0
     }
 }

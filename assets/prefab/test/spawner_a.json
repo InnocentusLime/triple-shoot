@@ -1,5 +1,5 @@
 {
-    "mob_spawner": {
+    "spawner": {
         "quota": 4,
         "cooldown_length": 3.0,
         "weight": 1,

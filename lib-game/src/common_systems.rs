@@ -83,8 +83,8 @@ pub fn do_knockback(world: &mut World, collisions: &CollisionSolver) {
     }
 }
 
-pub fn tick_mob_spawners(dt: f32, resources: &mut Resources) {
-    for (_, spawner) in resources.world.query_mut::<&mut MobSpawner>() {
+pub fn tick_spawners(dt: f32, resources: &mut Resources) {
+    for (_, spawner) in resources.world.query_mut::<&mut Spawner>() {
         #[cfg(feature = "dbg")]
         let src = resources.prefabs.inverse_resolve(spawner.prefab);
         dump!(
@@ -98,8 +98,8 @@ pub fn tick_mob_spawners(dt: f32, resources: &mut Resources) {
     }
 }
 
-pub fn tick_global_spawn(dt: f32, resources: &mut Resources, cmds: &mut CommandBuffer) {
-    for (ent, spawn) in &mut resources.world.query::<&mut SpawnDirector>() {
+pub fn tick_spawn_at_edges_directors(dt: f32, resources: &mut Resources, cmds: &mut CommandBuffer) {
+    for (ent, spawn) in &mut resources.world.query::<&mut SpawnAtEdgesDirector>() {
         spawn.next_spawn -= dt;
         if spawn.next_spawn > 0.0 {
             continue;
@@ -131,7 +131,7 @@ fn make_random_spawn_pos(game_field_width: f32, game_field_height: f32) -> Vec2 
 
 fn pick_random_spawner(director_ent: Entity, world: &World) -> AssetKey {
     let mut total_weight = 0;
-    for (_, (spawn, owner)) in &mut world.query::<(&MobSpawner, &SpawnerOf)>() {
+    for (_, (spawn, owner)) in &mut world.query::<(&Spawner, &SpawnerOf)>() {
         if !spawn.can_spawn() || owner.director != director_ent {
             continue;
         }
@@ -143,7 +143,7 @@ fn pick_random_spawner(director_ent: Entity, world: &World) -> AssetKey {
     }
 
     let mut chosen_weight = fastrand::u32(0..total_weight);
-    for (_, (spawn, owner)) in &mut world.query::<(&mut MobSpawner, &SpawnerOf)>() {
+    for (_, (spawn, owner)) in &mut world.query::<(&mut Spawner, &SpawnerOf)>() {
         if !spawn.can_spawn() || owner.director != director_ent {
             continue;
         }
