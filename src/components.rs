@@ -82,7 +82,7 @@ impl DeserializeWithManifestCtx<Resources> for PlayerData {
                 bullets_in_spread: manifest.shotgun.bullets_in_spread,
                 spread_angle: manifest.shotgun.spread_angle,
                 max_ammo: manifest.shotgun.max_ammo,
-                ammo: manifest.shotgun.max_ammo,
+                ammo: 0,
             },
             rifle: GunEntry {
                 bullet_prefab: rifle_bullet_prefab,
@@ -90,7 +90,7 @@ impl DeserializeWithManifestCtx<Resources> for PlayerData {
                 bullets_in_spread: manifest.rifle.bullets_in_spread,
                 spread_angle: manifest.rifle.spread_angle,
                 max_ammo: manifest.rifle.max_ammo,
-                ammo: manifest.rifle.max_ammo,
+                ammo: 0,
             },
         })
     }
