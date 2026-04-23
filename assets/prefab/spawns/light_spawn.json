@@ -1,0 +1,9 @@
+{
+    "spawner": {
+        "quota": 20,
+        "cooldown_length": 0.0,
+        "weight": 1,
+        "prefab": "prefab/light.json"
+    },
+    "spawner_of": {}
+}
