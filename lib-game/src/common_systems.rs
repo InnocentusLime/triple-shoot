@@ -98,6 +98,22 @@ pub fn tick_spawners(dt: f32, resources: &mut Resources) {
     }
 }
 
+pub fn tick_spawn_at_cells_directors(dt: f32, resources: &mut Resources, cmds: &mut CommandBuffer) {
+    for (ent, spawn) in &mut resources.world.query::<&mut SpawnAtCellsDirector>() {
+        spawn.next_spawn -= dt;
+        if spawn.next_spawn > 0.0 {
+            continue;
+        }
+        spawn.next_spawn = spawn.spawn_time;
+        let spawn_pos =
+            make_random_spawn_cell(resources.game_field_width, resources.game_field_height);
+        let prefab = pick_random_spawner(ent, &resources.world);
+        if prefab != INVALID_ASSET {
+            spawn_prefab(cmds, resources, prefab, Transform::from_pos(spawn_pos));
+        }
+    }
+}
+
 pub fn tick_spawn_at_edges_directors(dt: f32, resources: &mut Resources, cmds: &mut CommandBuffer) {
     for (ent, spawn) in &mut resources.world.query::<&mut SpawnAtEdgesDirector>() {
         spawn.next_spawn -= dt;
@@ -112,6 +128,20 @@ pub fn tick_spawn_at_edges_directors(dt: f32, resources: &mut Resources, cmds: &
             spawn_prefab(cmds, resources, prefab, Transform::from_pos(spawn_pos));
         }
     }
+}
+
+fn make_random_spawn_cell(game_field_width: f32, game_field_height: f32) -> Vec2 {
+    const CELL_SIZE: f32 = 64.0;
+
+    let center = vec2(SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32) / 2.0;
+    let off_to_start = vec2(game_field_width, game_field_height) / 2.0;
+    let start = center - off_to_start;
+    let cells_horiz = (game_field_width / CELL_SIZE).floor() as u32;
+    let cell_vert = (game_field_height / CELL_SIZE).floor() as u32;
+
+    let cell_x = fastrand::u32(0..cells_horiz) as f32;
+    let cell_y = fastrand::u32(0..cell_vert) as f32;
+    start + vec2(cell_x, cell_y) * CELL_SIZE + Vec2::splat(CELL_SIZE / 2.0)
 }
 
 fn make_random_spawn_pos(game_field_width: f32, game_field_height: f32) -> Vec2 {

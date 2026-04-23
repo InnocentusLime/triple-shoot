@@ -200,6 +200,7 @@ impl App {
         self.state
             .input(dt, &input_model, &mut self.resources, &mut self.cmds);
         common_systems::tick_spawners(dt, &mut self.resources);
+        common_systems::tick_spawn_at_cells_directors(dt, &mut self.resources, &mut self.cmds);
         common_systems::tick_spawn_at_edges_directors(dt, &mut self.resources, &mut self.cmds);
         projectile::step(dt, &mut self.resources.world);
         common_systems::tick_knockback(dt, &mut self.resources.world);

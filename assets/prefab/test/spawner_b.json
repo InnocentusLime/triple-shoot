@@ -1,0 +1,9 @@
+{
+    "spawner": {
+        "quota": 100,
+        "cooldown_length": 1.0,
+        "weight": 1,
+        "prefab": "prefab/test/pick.json"
+    },
+    "spawner_of": {}
+}

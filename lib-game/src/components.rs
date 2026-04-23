@@ -87,6 +87,13 @@ impl Hp {
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
+pub struct SpawnAtCellsDirector {
+    pub spawn_time: f32,
+    #[serde(skip)]
+    pub next_spawn: f32,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
 pub struct SpawnAtEdgesDirector {
     pub spawn_time: f32,
     #[serde(skip)]
