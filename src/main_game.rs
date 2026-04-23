@@ -1,4 +1,14 @@
+use std::path::PathBuf;
+
 use crate::prelude::*;
+
+const PLAYER: &str = "prefab/player.json";
+const WALL_HORIZ: &str = "prefab/wall_horiz.json";
+const WALL_VERT: &str = "prefab/wall_vert.json";
+const ENEMY_SPAWN_DIRECTOR: &str = "prefab/spawns/enemy_spawn_director.json";
+const LIGHT_SPAWN: &str = "prefab/spawns/light_spawn.json";
+const PICKUP_SPAWN_DIRECTOR: &str = "prefab/spawns/pickup_spawn_director.json";
+const SHOTGUN_PICKUP_SPAWN: &str = "prefab/spawns/shotgun_pickup_spawn.json";
 
 pub struct MainGame {
     do_ai: bool,
@@ -7,20 +17,26 @@ pub struct MainGame {
 
 impl MainGame {
     pub fn make_state_request() -> StateRequest {
+        let dependencies = [
+            PLAYER,
+            WALL_HORIZ,
+            WALL_VERT,
+            ENEMY_SPAWN_DIRECTOR,
+            LIGHT_SPAWN,
+            PICKUP_SPAWN_DIRECTOR,
+            SHOTGUN_PICKUP_SPAWN,
+        ];
+
         StateRequest {
             name: "main game",
             constructor: Box::new(Self::new_state),
-            dependencies: vec![
-                "prefab/player.json".into(),
-                "prefab/wall_horiz.json".into(),
-                "prefab/wall_vert.json".into(),
-            ],
+            dependencies: dependencies.into_iter().map(PathBuf::from).collect(),
         }
     }
 
     pub fn new_state(resources: &mut Resources, cmds: &mut CommandBuffer) -> Box<dyn State> {
-        let wall_horiz = resources.prefabs.resolve("prefab/wall_horiz.json").unwrap();
-        let wall_vert = resources.prefabs.resolve("prefab/wall_vert.json").unwrap();
+        let wall_horiz = resources.prefabs.resolve(WALL_HORIZ).unwrap();
+        let wall_vert = resources.prefabs.resolve(WALL_VERT).unwrap();
         let center = vec2(SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32) / 2.0;
         let play_off = vec2(resources.game_field_width, resources.game_field_height) * 0.5;
 
@@ -48,6 +64,41 @@ impl MainGame {
             wall_vert,
             Transform::from_pos(center + play_off * Vec2::X),
         );
+
+        let player_prefab = resources.prefabs.resolve(PLAYER).unwrap();
+        spawn_prefab(cmds, resources, player_prefab, Transform::from_pos(center));
+
+        let enemy_spawn_director_prefab = resources.prefabs.resolve(ENEMY_SPAWN_DIRECTOR).unwrap();
+        let light_spawn_prefab = resources.prefabs.resolve(LIGHT_SPAWN).unwrap();
+        let light_spawn = spawn_prefab(cmds, resources, light_spawn_prefab, Transform::IDENTITY);
+        let enemy_spawn_director = spawn_prefab(
+            cmds,
+            resources,
+            enemy_spawn_director_prefab,
+            Transform::IDENTITY,
+        );
+        cmds.insert_one(light_spawn, SpawnerOf { director: enemy_spawn_director });
+
+        let pickup_spawn_director_prefab =
+            resources.prefabs.resolve(PICKUP_SPAWN_DIRECTOR).unwrap();
+        let shotgun_pickup_spawn_prefab = resources.prefabs.resolve(SHOTGUN_PICKUP_SPAWN).unwrap();
+        let shotgun_pickup_spawn = spawn_prefab(
+            cmds,
+            resources,
+            shotgun_pickup_spawn_prefab,
+            Transform::IDENTITY,
+        );
+        let pickup_spawn_director = spawn_prefab(
+            cmds,
+            resources,
+            pickup_spawn_director_prefab,
+            Transform::IDENTITY,
+        );
+        cmds.insert_one(
+            shotgun_pickup_spawn,
+            SpawnerOf { director: pickup_spawn_director },
+        );
+
         Box::new(MainGame { do_player_controls: true, do_ai: true })
     }
 }
