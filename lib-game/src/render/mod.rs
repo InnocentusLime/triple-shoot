@@ -138,7 +138,8 @@ impl Render {
         const FLICKER_INTERVAL: f32 = 0.1;
 
         for (_, (tf, sprite, hp)) in world.query_mut::<(&Transform, &Sprite, Option<&Hp>)>() {
-            let transform = Affine2::from_angle_translation(tf.angle, tf.pos);
+            let pos = tf.pos + sprite.local_offset;
+            let transform = Affine2::from_angle_translation(tf.angle, pos);
             let mut color = sprite.color;
             if let Some(hp) = hp
                 && hp.cooling_down()
