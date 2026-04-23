@@ -87,7 +87,7 @@ impl Hp {
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
-pub struct SpawnDirector {
+pub struct SpawnAtEdgesDirector {
     pub spawn_time: f32,
     #[serde(skip)]
     pub next_spawn: f32,
@@ -100,7 +100,7 @@ pub struct SpawnerOf {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct MobSpawner {
+pub struct Spawner {
     pub quota: u32,
     pub cooldown_length: f32,
     pub cooldown: f32,
@@ -108,13 +108,13 @@ pub struct MobSpawner {
     pub prefab: AssetKey,
 }
 
-impl MobSpawner {
+impl Spawner {
     pub fn can_spawn(&self) -> bool {
         self.cooldown <= 0.0 && self.quota > 0
     }
 }
 
-impl DeserializeWithManifestCtx<Resources> for MobSpawner {
+impl DeserializeWithManifestCtx<Resources> for Spawner {
     type Manifest<'a> = MobSpawnerManifest<'a>;
 
     fn from_manifest(
@@ -124,7 +124,7 @@ impl DeserializeWithManifestCtx<Resources> for MobSpawner {
         let Some(prefab) = resources.prefabs.resolve(manifest.prefab) else {
             anyhow::bail!("No such prefab: {:?}", manifest.prefab);
         };
-        Ok(MobSpawner {
+        Ok(Spawner {
             quota: manifest.quota,
             cooldown_length: manifest.cooldown_length,
             cooldown: 0.0,
