@@ -8,7 +8,6 @@ use crate::components::*;
 use crate::prelude::*;
 use crate::{App, DebugCommand};
 
-use anyhow::Context;
 pub use cmd::*;
 use mimiq::egui::TextBuffer;
 pub use screendump::*;
@@ -124,28 +123,6 @@ impl App {
                 let entity = self.resolve_entity(&cmd.args[0])?;
                 self.resources.world.despawn(entity)?;
                 info!("Despawned entity {entity:?}")
-            }
-            "spof" => {
-                if cmd.args.len() < 2 {
-                    anyhow::bail!("Not enough args");
-                }
-
-                let director = self
-                    .resolve_entity(&cmd.args[0])
-                    .context("director (arg 1)")?;
-                let spawner = self
-                    .resolve_entity(&cmd.args[1])
-                    .context("spawner (arg 2)")?;
-
-                anyhow::ensure!(
-                    self.resources.world.satisfies::<&SpawnerOf>(spawner)?,
-                    "{spawner:?} is not a spawner",
-                );
-
-                self.resources
-                    .world
-                    .insert_one(spawner, SpawnerOf { director })?;
-                info!("Spawner {spawner:?} is now controlled by {director:?}")
             }
             "spawn" => {
                 if cmd.args.len() < 3 {
