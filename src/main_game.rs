@@ -5,27 +5,20 @@ use crate::prelude::*;
 const PLAYER: &str = "prefab/player.json";
 const WALL_HORIZ: &str = "prefab/wall_horiz.json";
 const WALL_VERT: &str = "prefab/wall_vert.json";
-const ENEMY_SPAWN_DIRECTOR: &str = "prefab/spawns/enemy_spawn_director.json";
-const LIGHT_SPAWN: &str = "prefab/spawns/light_spawn.json";
-const PICKUP_SPAWN_DIRECTOR: &str = "prefab/spawns/pickup_spawn_director.json";
-const SHOTGUN_PICKUP_SPAWN: &str = "prefab/spawns/shotgun_pickup_spawn.json";
+const LIGHT: &str = "prefab/light.json";
+const SHOTGUN_PICKUP: &str = "prefab/shotgun_pickup.json";
 
 pub struct MainGame {
+    enemy_spawner: Spawner,
+    pickup_spawner: Spawner,
+
     do_ai: bool,
     do_player_controls: bool,
 }
 
 impl MainGame {
     pub fn make_state_request() -> StateRequest {
-        let dependencies = [
-            PLAYER,
-            WALL_HORIZ,
-            WALL_VERT,
-            ENEMY_SPAWN_DIRECTOR,
-            LIGHT_SPAWN,
-            PICKUP_SPAWN_DIRECTOR,
-            SHOTGUN_PICKUP_SPAWN,
-        ];
+        let dependencies = [PLAYER, WALL_HORIZ, WALL_VERT, LIGHT, SHOTGUN_PICKUP];
 
         StateRequest {
             name: "main game",
@@ -68,38 +61,33 @@ impl MainGame {
         let player_prefab = resources.prefabs.resolve(PLAYER).unwrap();
         spawn_prefab(cmds, resources, player_prefab, Transform::from_pos(center));
 
-        let enemy_spawn_director_prefab = resources.prefabs.resolve(ENEMY_SPAWN_DIRECTOR).unwrap();
-        let light_spawn_prefab = resources.prefabs.resolve(LIGHT_SPAWN).unwrap();
-        let light_spawn = spawn_prefab(cmds, resources, light_spawn_prefab, Transform::IDENTITY);
-        let enemy_spawn_director = spawn_prefab(
-            cmds,
-            resources,
-            enemy_spawn_director_prefab,
-            Transform::IDENTITY,
-        );
-        cmds.insert_one(light_spawn, SpawnerOf { director: enemy_spawn_director });
+        let light_prefab = resources.prefabs.resolve(LIGHT).unwrap();
+        let enemy_spawner = Spawner {
+            timer: 0.0,
+            wait: 1.0,
+            entries: vec![SpawnEntry {
+                timer: 0.0,
+                wait: 1.0,
+                weight: 1,
+                quota: 20,
+                prefab: light_prefab,
+            }],
+        };
 
-        let pickup_spawn_director_prefab =
-            resources.prefabs.resolve(PICKUP_SPAWN_DIRECTOR).unwrap();
-        let shotgun_pickup_spawn_prefab = resources.prefabs.resolve(SHOTGUN_PICKUP_SPAWN).unwrap();
-        let shotgun_pickup_spawn = spawn_prefab(
-            cmds,
-            resources,
-            shotgun_pickup_spawn_prefab,
-            Transform::IDENTITY,
-        );
-        let pickup_spawn_director = spawn_prefab(
-            cmds,
-            resources,
-            pickup_spawn_director_prefab,
-            Transform::IDENTITY,
-        );
-        cmds.insert_one(
-            shotgun_pickup_spawn,
-            SpawnerOf { director: pickup_spawn_director },
-        );
+        let shotgun_pickup_prefab = resources.prefabs.resolve(SHOTGUN_PICKUP).unwrap();
+        let pickup_spawner = Spawner {
+            timer: 0.0,
+            wait: 1.0,
+            entries: vec![SpawnEntry {
+                timer: 0.0,
+                wait: 3.0,
+                weight: 1,
+                quota: 10,
+                prefab: shotgun_pickup_prefab,
+            }],
+        };
 
-        Box::new(MainGame { do_player_controls: true, do_ai: true })
+        Box::new(MainGame { enemy_spawner, pickup_spawner, do_player_controls: true, do_ai: true })
     }
 }
 
@@ -209,6 +197,20 @@ impl State for MainGame {
                 }
             }
         }
+
+        dump!("pickup_spawner: {:#.2?}", self.pickup_spawner);
+        if let Some(prefab) = self.pickup_spawner.tick(dt) {
+            let pos =
+                make_random_spawn_cell(resources.game_field_width, resources.game_field_height);
+            spawn_prefab(cmds, resources, prefab, Transform::from_pos(pos));
+        }
+
+        dump!("enemy_spawner: {:#.2?}", self.enemy_spawner);
+        if let Some(prefab) = self.enemy_spawner.tick(dt) {
+            let pos =
+                make_random_spawn_pos(resources.game_field_width, resources.game_field_height);
+            spawn_prefab(cmds, resources, prefab, Transform::from_pos(pos));
+        }
     }
 }
 
@@ -261,4 +263,94 @@ fn steer_dir(world: &World, this: Entity, pos: Vec2) -> Vec2 {
     }
 
     result.normalize_or_zero()
+}
+
+#[derive(Debug)]
+struct Spawner {
+    timer: f32,
+    wait: f32,
+    entries: Vec<SpawnEntry>,
+}
+
+impl Spawner {
+    fn tick(&mut self, dt: f32) -> Option<AssetKey> {
+        self.timer -= dt;
+        for entry in &mut self.entries {
+            if entry.timer >= 0.0 {
+                entry.timer -= dt;
+            }
+        }
+        if self.timer > 0.0 {
+            return None;
+        }
+        self.timer = self.wait;
+        let total_weight = self
+            .entries
+            .iter()
+            .filter(|x| x.is_active())
+            .map(|x| x.weight)
+            .sum();
+        if total_weight == 0 {
+            return None;
+        }
+
+        let mut chosen_weight = fastrand::u32(0..total_weight);
+        for entry in &mut self.entries {
+            if !entry.is_active() {
+                continue;
+            }
+            if chosen_weight < entry.weight {
+                entry.quota -= 1;
+                entry.timer = entry.wait;
+                return Some(entry.prefab);
+            }
+            chosen_weight -= entry.weight;
+        }
+
+        None
+    }
+}
+
+#[derive(Debug)]
+struct SpawnEntry {
+    timer: f32,
+    wait: f32,
+    weight: u32,
+    quota: u32,
+    prefab: AssetKey,
+}
+
+impl SpawnEntry {
+    fn is_active(&self) -> bool {
+        self.timer <= 0.0 && self.quota > 0
+    }
+}
+
+fn make_random_spawn_cell(game_field_width: f32, game_field_height: f32) -> Vec2 {
+    const CELL_SIZE: f32 = 64.0;
+
+    let center = vec2(SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32) / 2.0;
+    let off_to_start = vec2(game_field_width, game_field_height) / 2.0;
+    let start = center - off_to_start;
+    let cells_horiz = (game_field_width / CELL_SIZE).floor() as u32;
+    let cell_vert = (game_field_height / CELL_SIZE).floor() as u32;
+
+    let cell_x = fastrand::u32(0..cells_horiz) as f32;
+    let cell_y = fastrand::u32(0..cell_vert) as f32;
+    start + vec2(cell_x, cell_y) * CELL_SIZE + Vec2::splat(CELL_SIZE / 2.0)
+}
+
+fn make_random_spawn_pos(game_field_width: f32, game_field_height: f32) -> Vec2 {
+    const BUMP: f32 = 32.0;
+
+    let center = vec2(SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32) / 2.0;
+    let off = vec2(game_field_width, game_field_height) / 2.0 - Vec2::splat(BUMP);
+    let noise_increment = fastrand::i32(-3..3);
+    let spawnpoints = [
+        center - Vec2::X * off + Vec2::Y * (32.0 * noise_increment as f32),
+        center + Vec2::X * off + Vec2::Y * (32.0 * noise_increment as f32),
+        center - Vec2::Y * off + Vec2::X * (32.0 * noise_increment as f32),
+        center + Vec2::Y * off + Vec2::X * (32.0 * noise_increment as f32),
+    ];
+    fastrand::choice(spawnpoints).unwrap()
 }

@@ -1,9 +1,0 @@
-{
-    "spawner": {
-        "quota": 10,
-        "cooldown_length": 3.0,
-        "weight": 1,
-        "prefab": "prefab/shotgun_pickup.json"
-    },
-    "spawner_of": {}
-}

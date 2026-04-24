@@ -39,12 +39,8 @@ pub fn register_libgame_components(prefab_factory: &mut PrefabFactory<Resources>
     prefab_factory.register_component::<KnockbackTag>("knockback_effect");
     prefab_factory.register_component::<Damage>("damage");
     prefab_factory.register_component::<Defence>("defence");
-    prefab_factory.register_component::<SpawnAtEdgesDirector>("spawn_at_edges_director");
-    prefab_factory.register_component::<SpawnAtCellsDirector>("spawn_at_cells_director");
-    prefab_factory.register_component::<SpawnerOf>("spawner_of");
 
     prefab_factory.register_component_with_constructor_ctx::<Sprite>("sprite");
-    prefab_factory.register_component_with_constructor_ctx::<Spawner>("spawner");
 }
 
 impl DeserializeWithManifestCtx<Resources> for Sprite {
