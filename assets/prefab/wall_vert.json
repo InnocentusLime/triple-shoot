@@ -7,5 +7,13 @@
         "type": "Rect",
         "width": 8.0,
         "height": 400.0
+    },
+    "sprite": {
+        "layer": 0,
+        "texture": "atlas/bnuuy.png",
+        "sort_offset": 0.0,
+        "local_offset": [0.0, 0.0],
+        "tex_rect_pos": [753, 50],
+        "tex_rect_size": [8, 400]
     }
 }
