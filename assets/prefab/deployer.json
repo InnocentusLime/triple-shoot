@@ -1,0 +1,12 @@
+{
+    "transform": null,
+    "deployer": {},
+    "sprite": {
+        "layer": 0,
+        "texture": "atlas/bnuuy.png",
+        "sort_offset": 0.0,
+        "local_offset": [0.0, 0.0],
+        "tex_rect_pos": [0, 44],
+        "tex_rect_size": [14, 14]
+    }
+}

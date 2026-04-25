@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use crate::prelude::*;
 
+const DEPLOYER_TIME: f32 = 1.0;
 const ENEMY_TYPE_COUNT: usize = 1;
 const PICKUP_TYPE_COUNT: usize = 1;
 
@@ -10,10 +11,12 @@ const WALL_HORIZ: &str = "prefab/wall_horiz.json";
 const WALL_VERT: &str = "prefab/wall_vert.json";
 const LIGHT: &str = "prefab/light.json";
 const SHOTGUN_PICKUP: &str = "prefab/shotgun_pickup.json";
+const DEPLOYER: &str = "prefab/deployer.json";
 
 pub struct MainGame {
     /* Wave info */
     wave: Wave,
+    deployer_prefab: AssetKey,
 
     /* Debug flags */
     do_ai: bool,
@@ -22,7 +25,7 @@ pub struct MainGame {
 
 impl MainGame {
     pub fn make_state_request() -> StateRequest {
-        let dependencies = [PLAYER, WALL_HORIZ, WALL_VERT, LIGHT, SHOTGUN_PICKUP];
+        let dependencies = [PLAYER, WALL_HORIZ, WALL_VERT, LIGHT, SHOTGUN_PICKUP, DEPLOYER];
 
         StateRequest {
             name: "main game",
@@ -69,8 +72,9 @@ impl MainGame {
             [resources.prefabs.resolve(SHOTGUN_PICKUP).unwrap()],
             [resources.prefabs.resolve(LIGHT).unwrap()],
         );
+        let deployer_prefab = resources.prefabs.resolve(DEPLOYER).unwrap();
 
-        Box::new(MainGame { wave, do_player_controls: true, do_ai: true })
+        Box::new(MainGame { wave, deployer_prefab, do_player_controls: true, do_ai: true })
     }
 }
 
@@ -194,7 +198,22 @@ impl State for MainGame {
         if let Some(prefab) = self.wave.enemies.tick(dt) {
             let pos =
                 make_random_spawn_pos(resources.game_field_width, resources.game_field_height);
-            spawn_prefab(cmds, resources, prefab, Transform::from_pos(pos));
+            let deployer = spawn_prefab(
+                cmds,
+                resources,
+                self.deployer_prefab,
+                Transform::from_pos(pos),
+            );
+            cmds.insert_one(deployer, Deployer { timer: DEPLOYER_TIME, prefab });
+        }
+        for (deployer_entity, (tf, deployer)) in
+            &mut resources.world.query::<(&Transform, &mut Deployer)>()
+        {
+            deployer.timer -= dt;
+            if deployer.timer <= 0.0 {
+                cmds.despawn(deployer_entity);
+                spawn_prefab(cmds, resources, deployer.prefab, *tf);
+            }
         }
     }
 }
@@ -316,13 +335,13 @@ impl Wave {
         }
 
         if WAVES[self.wave_id].is_pickup_wave {
+            world.query::<&AmmoPickup>().iter().next().is_none()
+        } else {
             world
-                .query::<&AmmoPickup>()
+                .query::<Or<&NpcAi, &Deployer>>()
                 .iter()
                 .next()
                 .is_none()
-        } else {
-            world.query::<()>().with::<&NpcAi>().iter().next().is_none()
         }
     }
 
