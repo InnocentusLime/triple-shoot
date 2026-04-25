@@ -190,12 +190,12 @@ impl State for MainGame {
         }
 
         dump!("wave: {:#.2?}", self.wave);
-        if let Some(prefab) = self.wave.pickups.tick(dt) {
+        if let Some(prefab) = self.wave.tick_pickup_spawns(dt, &resources.world) {
             let pos =
                 make_random_spawn_cell(resources.game_field_width, resources.game_field_height);
             spawn_prefab(cmds, resources, prefab, Transform::from_pos(pos));
         }
-        if let Some(prefab) = self.wave.enemies.tick(dt) {
+        if let Some(prefab) = self.wave.tick_enemy_spawns(dt, &resources.world) {
             let pos =
                 make_random_spawn_pos(resources.game_field_width, resources.game_field_height);
             let deployer = spawn_prefab(
@@ -274,25 +274,33 @@ static WAVES: [WaveCfg; 2] = [
         is_pickup_wave: true,
         pickup_wait: 1.0,
         pickups: [SpawnEntryCfg { wait: 0.8, weight: 1, quota: 3 }],
+        max_pickups_on_screen: 2,
         enemies_wait: 1.0,
         enemies: [SpawnEntryCfg::disabled()],
+        max_enemies_on_screen: 0,
     },
     WaveCfg {
         is_pickup_wave: false,
         pickup_wait: 1.0,
         pickups: [SpawnEntryCfg { wait: 1.0, weight: 1, quota: 10 }],
+        max_pickups_on_screen: 2,
         enemies_wait: 1.0,
         enemies: [SpawnEntryCfg { wait: 1.0, weight: 1, quota: 20 }],
+        max_enemies_on_screen: 3,
     },
 ];
 
 #[derive(Debug, Clone, Copy)]
 struct WaveCfg {
     is_pickup_wave: bool,
+
     pickup_wait: f32,
     pickups: [SpawnEntryCfg; PICKUP_TYPE_COUNT],
+    max_pickups_on_screen: usize,
+
     enemies_wait: f32,
     enemies: [SpawnEntryCfg; ENEMY_TYPE_COUNT],
+    max_enemies_on_screen: usize,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -327,6 +335,24 @@ impl Wave {
         };
         res.apply_cfg(WAVES[0]);
         res
+    }
+
+    fn tick_pickup_spawns(&mut self, dt: f32, world: &World) -> Option<AssetKey> {
+        let pickup_count = world.query::<&AmmoPickup>().into_iter().count();
+        if pickup_count < WAVES[self.wave_id].max_pickups_on_screen {
+            self.pickups.tick(dt)
+        } else {
+            None
+        }
+    }
+
+    fn tick_enemy_spawns(&mut self, dt: f32, world: &World) -> Option<AssetKey> {
+        let enemy_count = world.query::<Or<&NpcAi, &Deployer>>().into_iter().count();
+        if enemy_count < WAVES[self.wave_id].max_enemies_on_screen {
+            self.enemies.tick(dt)
+        } else {
+            None
+        }
     }
 
     fn is_complete(&self, world: &World) -> bool {
@@ -371,13 +397,11 @@ impl Wave {
     }
 
     fn are_spawners_empty(&self) -> bool {
-        if self.wave_id == 0 {
-            return true;
+        if WAVES[self.wave_id].is_pickup_wave {
+            self.pickups.entries.iter().all(|x| x.quota == 0)
+        } else {
+            self.enemies.entries.iter().all(|x| x.quota == 0)
         }
-        if self.wave_id == 1 {
-            return self.pickups.entries.iter().all(|x| x.quota == 0);
-        }
-        self.enemies.entries.iter().all(|x| x.quota == 0)
     }
 }
 
