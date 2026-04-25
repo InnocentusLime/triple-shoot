@@ -8,6 +8,7 @@ pub fn register_components(prefab_factory: &mut lib_game::PrefabFactory<Resource
     prefab_factory.register_component_with_constructor_ctx::<PlayerData>("player_data");
     prefab_factory.register_component::<NpcAi>("npc");
     prefab_factory.register_component::<AmmoPickup>("ammo_pickup");
+    prefab_factory.register_component::<Deployer>("deployer");
 }
 
 #[derive(Debug, Clone, Copy, serde::Deserialize)]
@@ -117,4 +118,12 @@ pub struct GunEntryManifest<'a> {
     pub bullets_in_spread: u8,
     pub spread_angle: f32,
     pub max_ammo: u32,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct Deployer {
+    #[serde(skip)]
+    pub timer: f32,
+    #[serde(skip)]
+    pub prefab: AssetKey,
 }
