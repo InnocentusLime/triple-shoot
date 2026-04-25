@@ -2,6 +2,9 @@ use std::path::PathBuf;
 
 use crate::prelude::*;
 
+const ENEMY_TYPE_COUNT: usize = 1;
+const PICKUP_TYPE_COUNT: usize = 1;
+
 const PLAYER: &str = "prefab/player.json";
 const WALL_HORIZ: &str = "prefab/wall_horiz.json";
 const WALL_VERT: &str = "prefab/wall_vert.json";
@@ -9,9 +12,10 @@ const LIGHT: &str = "prefab/light.json";
 const SHOTGUN_PICKUP: &str = "prefab/shotgun_pickup.json";
 
 pub struct MainGame {
-    enemy_spawner: Spawner,
-    pickup_spawner: Spawner,
+    /* Wave info */
+    wave: Wave,
 
+    /* Debug flags */
     do_ai: bool,
     do_player_controls: bool,
 }
@@ -61,33 +65,12 @@ impl MainGame {
         let player_prefab = resources.prefabs.resolve(PLAYER).unwrap();
         spawn_prefab(cmds, resources, player_prefab, Transform::from_pos(center));
 
-        let light_prefab = resources.prefabs.resolve(LIGHT).unwrap();
-        let enemy_spawner = Spawner {
-            timer: 0.0,
-            wait: 1.0,
-            entries: vec![SpawnEntry {
-                timer: 0.0,
-                wait: 1.0,
-                weight: 1,
-                quota: 20,
-                prefab: light_prefab,
-            }],
-        };
+        let wave = Wave::new(
+            [resources.prefabs.resolve(SHOTGUN_PICKUP).unwrap()],
+            [resources.prefabs.resolve(LIGHT).unwrap()],
+        );
 
-        let shotgun_pickup_prefab = resources.prefabs.resolve(SHOTGUN_PICKUP).unwrap();
-        let pickup_spawner = Spawner {
-            timer: 0.0,
-            wait: 1.0,
-            entries: vec![SpawnEntry {
-                timer: 0.0,
-                wait: 3.0,
-                weight: 1,
-                quota: 10,
-                prefab: shotgun_pickup_prefab,
-            }],
-        };
-
-        Box::new(MainGame { enemy_spawner, pickup_spawner, do_player_controls: true, do_ai: true })
+        Box::new(MainGame { wave, do_player_controls: true, do_ai: true })
     }
 }
 
@@ -131,6 +114,10 @@ impl State for MainGame {
                 let new_ammo = gun.max_ammo.min(gun.ammo + ammo.value);
                 data.set_gun(ammo.weapon, GunEntry { ammo: new_ammo, ..gun });
             }
+        }
+
+        if self.wave.is_complete(&resources.world) {
+            self.wave.next_wave();
         }
 
         None
@@ -198,15 +185,13 @@ impl State for MainGame {
             }
         }
 
-        dump!("pickup_spawner: {:#.2?}", self.pickup_spawner);
-        if let Some(prefab) = self.pickup_spawner.tick(dt) {
+        dump!("wave: {:#.2?}", self.wave);
+        if let Some(prefab) = self.wave.pickups.tick(dt) {
             let pos =
                 make_random_spawn_cell(resources.game_field_width, resources.game_field_height);
             spawn_prefab(cmds, resources, prefab, Transform::from_pos(pos));
         }
-
-        dump!("enemy_spawner: {:#.2?}", self.enemy_spawner);
-        if let Some(prefab) = self.enemy_spawner.tick(dt) {
+        if let Some(prefab) = self.wave.enemies.tick(dt) {
             let pos =
                 make_random_spawn_pos(resources.game_field_width, resources.game_field_height);
             spawn_prefab(cmds, resources, prefab, Transform::from_pos(pos));
@@ -265,14 +250,130 @@ fn steer_dir(world: &World, this: Entity, pos: Vec2) -> Vec2 {
     result.normalize_or_zero()
 }
 
-#[derive(Debug)]
-struct Spawner {
-    timer: f32,
-    wait: f32,
-    entries: Vec<SpawnEntry>,
+static WAVES: [WaveCfg; 2] = [
+    WaveCfg {
+        is_pickup_wave: true,
+        pickup_wait: 1.0,
+        pickups: [SpawnEntryCfg { wait: 0.8, weight: 1, quota: 3 }],
+        enemies_wait: 1.0,
+        enemies: [SpawnEntryCfg::disabled()],
+    },
+    WaveCfg {
+        is_pickup_wave: false,
+        pickup_wait: 1.0,
+        pickups: [SpawnEntryCfg { wait: 1.0, weight: 1, quota: 10 }],
+        enemies_wait: 1.0,
+        enemies: [SpawnEntryCfg { wait: 1.0, weight: 1, quota: 20 }],
+    },
+];
+
+#[derive(Debug, Clone, Copy)]
+struct WaveCfg {
+    is_pickup_wave: bool,
+    pickup_wait: f32,
+    pickups: [SpawnEntryCfg; PICKUP_TYPE_COUNT],
+    enemies_wait: f32,
+    enemies: [SpawnEntryCfg; ENEMY_TYPE_COUNT],
 }
 
-impl Spawner {
+#[derive(Debug, Clone, Copy)]
+struct SpawnEntryCfg {
+    wait: f32,
+    weight: u32,
+    quota: u32,
+}
+
+impl SpawnEntryCfg {
+    const fn disabled() -> SpawnEntryCfg {
+        SpawnEntryCfg { wait: 1.0, weight: 1, quota: 0 }
+    }
+}
+
+#[derive(Debug)]
+struct Wave {
+    wave_id: usize,
+    pickups: Spawner<PICKUP_TYPE_COUNT>,
+    enemies: Spawner<ENEMY_TYPE_COUNT>,
+}
+
+impl Wave {
+    fn new(
+        pickup_prefabs: [AssetKey; PICKUP_TYPE_COUNT],
+        enemy_prefabs: [AssetKey; ENEMY_TYPE_COUNT],
+    ) -> Wave {
+        let mut res = Wave {
+            wave_id: 0,
+            pickups: Spawner::new(1.0, pickup_prefabs.map(SpawnEntry::new)),
+            enemies: Spawner::new(1.0, enemy_prefabs.map(SpawnEntry::new)),
+        };
+        res.apply_cfg(WAVES[0]);
+        res
+    }
+
+    fn is_complete(&self, world: &World) -> bool {
+        if !self.are_spawners_empty() {
+            return false;
+        }
+
+        if WAVES[self.wave_id].is_pickup_wave {
+            world
+                .query::<&AmmoPickup>()
+                .iter()
+                .next()
+                .is_none()
+        } else {
+            world.query::<()>().with::<&NpcAi>().iter().next().is_none()
+        }
+    }
+
+    fn next_wave(&mut self) {
+        self.wave_id += 1;
+        info!("next wave: {}", self.wave_id);
+        if self.wave_id >= WAVES.len() {
+            self.wave_id = WAVES.len() - 1
+        }
+        self.apply_cfg(WAVES[self.wave_id]);
+    }
+
+    fn apply_cfg(&mut self, cfg: WaveCfg) {
+        self.enemies.wait = cfg.enemies_wait;
+        self.enemies
+            .entries
+            .iter_mut()
+            .zip(cfg.enemies)
+            .for_each(|(dst, src)| dst.apply_cfg(src));
+
+        self.pickups.wait = cfg.pickup_wait;
+        self.pickups
+            .entries
+            .iter_mut()
+            .zip(cfg.pickups)
+            .for_each(|(dst, src)| dst.apply_cfg(src));
+    }
+
+    fn are_spawners_empty(&self) -> bool {
+        if self.wave_id == 0 {
+            return true;
+        }
+        if self.wave_id == 1 {
+            return self.pickups.entries.iter().all(|x| x.quota == 0);
+        }
+        self.enemies.entries.iter().all(|x| x.quota == 0)
+    }
+}
+
+#[derive(Debug)]
+struct Spawner<const N: usize> {
+    timer: f32,
+    wait: f32,
+    entries: [SpawnEntry; N],
+}
+
+impl<const N: usize> Spawner<N> {
+    fn new(wait: f32, entries: [SpawnEntry; N]) -> Self {
+        Spawner { timer: 0.0, wait, entries }
+    }
+
     fn tick(&mut self, dt: f32) -> Option<AssetKey> {
         self.timer -= dt;
         for entry in &mut self.entries {
@@ -321,8 +422,22 @@ struct SpawnEntry {
 }
 
 impl SpawnEntry {
+    fn new(prefab: AssetKey) -> Self {
+        SpawnEntry { timer: 0.0, wait: 1.0, weight: 1, quota: 0, prefab }
+    }
+
     fn is_active(&self) -> bool {
         self.timer <= 0.0 && self.quota > 0
+    }
+
+    fn apply_cfg(&mut self, cfg: SpawnEntryCfg) {
+        *self = SpawnEntry {
+            timer: 0.0,
+            wait: cfg.wait,
+            weight: cfg.weight,
+            quota: cfg.quota,
+            prefab: self.prefab,
+        };
     }
 }
 
