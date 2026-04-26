@@ -34,7 +34,7 @@ pub static WAVES: [WaveCfg; 9] = [
     WaveCfg {
         is_pickup_wave: false,
         pickup_wait: 1.0,
-        pickups: [SpawnEntryCfg { wait: 0.8, weight: 1, quota: 6 }],
+        pickups: [SpawnEntryCfg { wait: 0.8, weight: 1, quota: 4 }],
         max_pickups_on_screen: 2,
         enemies_wait: 1.0,
         enemies: [SpawnEntryCfg { wait: 1.0, weight: 1, quota: 13 }, SpawnEntryCfg::disabled()],
