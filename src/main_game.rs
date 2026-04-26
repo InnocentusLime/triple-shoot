@@ -129,8 +129,8 @@ impl State for MainGame {
             }
         }
 
-        if self.wave.is_complete(&resources.world) {
-            self.wave.next_wave();
+        if self.wave.is_complete(&resources.world) && !self.wave.next_wave() {
+            return Some(crate::win::Win::make_state_request());
         }
 
         None
