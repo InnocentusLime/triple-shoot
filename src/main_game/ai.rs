@@ -7,10 +7,14 @@ pub fn think(dt: f32, resources: &Resources) {
     let Some(player_pos) = get_player_pos(&resources.world) else {
         return;
     };
-    let mut query = resources
-        .world
-        .query::<(&Transform, &mut KinematicControl, &mut NpcAi, &mut Boid)>();
-    for (_, (tf, kin, ai, boid)) in &mut query {
+    let mut query = resources.world.query::<(
+        &Transform,
+        &mut KinematicControl,
+        &mut NpcAi,
+        &mut Boid,
+        &Hp,
+    )>();
+    for (_, (tf, kin, ai, boid, hp)) in &mut query {
         let dr_to_player = player_pos - tf.pos;
         let dir_to_player = dr_to_player.normalize_or_zero();
         match ai {
@@ -40,7 +44,7 @@ pub fn think(dt: f32, resources: &Resources) {
                     }
                 }
                 PouncerState::Pouncing { dir } => {
-                    if kin.collided {
+                    if kin.collided || hp.cooling_down() {
                         let timer = *wander_time + fastrand::f32() * 1.4;
                         *state = PouncerState::Wandering { timer }
                     } else {
