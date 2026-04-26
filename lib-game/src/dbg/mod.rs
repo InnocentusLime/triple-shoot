@@ -13,13 +13,14 @@ use mimiq::egui::TextBuffer;
 pub use screendump::*;
 
 pub(crate) struct DebugStuff {
+    pub show_val_dump: bool,
     pub cmd_center: CommandCenter,
     pub force_freeze: bool,
 }
 
 impl DebugStuff {
     pub(crate) fn new() -> Self {
-        Self { cmd_center: CommandCenter::new(), force_freeze: false }
+        Self { cmd_center: CommandCenter::new(), force_freeze: false, show_val_dump: false }
     }
 
     pub fn game_freeze_active(&self) -> bool {
@@ -74,11 +75,15 @@ impl App {
                 error!("fail: {err:#}");
             }
         }
-        GLOBAL_DUMP.ui(egui_ctx);
+        if self.debug.show_val_dump {
+            GLOBAL_DUMP.ui(egui_ctx);
+        }
     }
 
     fn handle_command(&mut self, cmd: &DebugCommand) -> anyhow::Result<()> {
         match cmd.command.as_str() {
+            "sdu" => self.debug.show_val_dump = true,
+            "hdu" => self.debug.show_val_dump = false,
             "f" => self.debug.force_freeze = true,
             "uf" => self.debug.force_freeze = false,
             "hw" => self.render.render_world = false,

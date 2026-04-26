@@ -87,12 +87,18 @@ impl MainGame {
         );
         let deployer_prefab = resources.prefabs.resolve(DEPLOYER).unwrap();
 
-        Box::new(MainGame { reset_confirmed: false, wave, deployer_prefab, do_player_controls: true, do_ai: true })
+        Box::new(MainGame {
+            reset_confirmed: false,
+            wave,
+            deployer_prefab,
+            do_player_controls: true,
+            do_ai: true,
+        })
     }
 
     fn decide_reset(&self, world: &World) -> Option<StateRequest> {
         if world_has_player(world) || !self.reset_confirmed {
-            return None; 
+            return None;
         }
         Some(MainGame::make_state_request())
     }
