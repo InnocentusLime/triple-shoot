@@ -17,9 +17,9 @@
         "layer": 0,
         "texture": "atlas/bnuuy.png",
         "sort_offset": 0.0,
-        "local_offset": [0.0, 0.0],
-        "tex_rect_pos": [1, 1],
-        "tex_rect_size": [16, 16]
+        "local_offset": [0.0, -4.0],
+        "tex_rect_pos": [588, 23],
+        "tex_rect_size": [31, 35]
     },
     "kinematic": {
         "collision": ["Level"],
