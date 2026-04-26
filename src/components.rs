@@ -127,3 +127,6 @@ pub struct Deployer {
     #[serde(skip)]
     pub prefab: AssetKey,
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct GameOverCard;

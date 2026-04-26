@@ -15,6 +15,8 @@ const SHOTGUN_PICKUP: &str = "prefab/shotgun_pickup.json";
 const DEPLOYER: &str = "prefab/deployer.json";
 
 pub struct MainGame {
+    reset_confirmed: bool,
+
     /* Wave info */
     wave: spawning::Wave,
     deployer_prefab: AssetKey,
@@ -35,6 +37,7 @@ impl MainGame {
             DEPLOYER,
             "atlas/grad.png",
             "atlas/ui.png",
+            "atlas/game_over.png",
         ];
 
         StateRequest {
@@ -84,7 +87,14 @@ impl MainGame {
         );
         let deployer_prefab = resources.prefabs.resolve(DEPLOYER).unwrap();
 
-        Box::new(MainGame { wave, deployer_prefab, do_player_controls: true, do_ai: true })
+        Box::new(MainGame { reset_confirmed: false, wave, deployer_prefab, do_player_controls: true, do_ai: true })
+    }
+
+    fn decide_reset(&self, world: &World) -> Option<StateRequest> {
+        if world_has_player(world) || !self.reset_confirmed {
+            return None; 
+        }
+        Some(MainGame::make_state_request())
     }
 }
 
@@ -134,7 +144,24 @@ impl State for MainGame {
             return Some(crate::win::Win::make_state_request());
         }
 
-        None
+        if should_spawn_game_over(&resources.world) {
+            let over_card = resources.textures.resolve("atlas/game_over.png").unwrap();
+            cmds.spawn((
+                Transform::from_xy(SCREEN_WIDTH as f32 / 2.0, SCREEN_HEIGHT as f32 / 2.0),
+                Sprite {
+                    layer: 0,
+                    texture: over_card,
+                    tex_rect_pos: uvec2(0, 0),
+                    tex_rect_size: uvec2(256, 256),
+                    color: Color::from_hex(0xffffffff),
+                    sort_offset: 0.0,
+                    local_offset: Vec2::ZERO,
+                },
+                GameOverCard,
+            ));
+        }
+
+        self.decide_reset(&resources.world)
     }
 
     fn input(
@@ -147,6 +174,7 @@ impl State for MainGame {
         player::input(dt, input_model, resources, cmds);
         ai::think(dt, resources);
         spawning::tick(&mut self.wave, self.deployer_prefab, dt, resources, cmds);
+        self.reset_confirmed = player_wants_restart(&resources.world, input_model);
     }
 
     fn ui(&mut self, resources: &mut Resources, out: &mut Vec<UiElement>) {
@@ -207,4 +235,17 @@ impl State for MainGame {
             });
         }
     }
+}
+
+fn should_spawn_game_over(world: &World) -> bool {
+    let has_gameover = world.query::<&GameOverCard>().into_iter().next().is_some();
+    !has_gameover && !world_has_player(world)
+}
+
+fn player_wants_restart(world: &World, input_model: &InputModel) -> bool {
+    !world_has_player(world) && input_model.shoot_down
+}
+
+fn world_has_player(world: &World) -> bool {
+    world.query::<&PlayerTag>().into_iter().next().is_some()
 }
