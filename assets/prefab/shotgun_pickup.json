@@ -10,7 +10,7 @@
     },
     "ammo_pickup": {
         "weapon": "Shotgun",
-        "value": 4
+        "value": 3
     },
     "interaction_query": {
         "groups": ["Player"],
