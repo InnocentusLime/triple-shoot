@@ -1,0 +1,54 @@
+{
+    "team": "Enemy",
+    "npc": {
+        "ai": "Pouncer",
+        "speed": 48.0,
+        "pounce_speed": 320.0,
+        "wander_time": 2.0,
+        "wind_time": 0.6
+    },
+    "transform": null,
+    "hp": {
+        "hp": 30,
+        "cooldown_length": 0.5
+    },
+    "knockback": {
+        "knockback_length": 1.0,
+        "knockback_speed": 64.0
+    },
+    "sprite": {
+        "layer": 0,
+        "texture": "atlas/bnuuy.png",
+        "sort_offset": 0.0,
+        "local_offset": [0.0, -4.0],
+        "tex_rect_pos": [633, 21],
+        "tex_rect_size": [44, 37]
+    },
+    "kinematic": {
+        "collision": ["Level"],
+        "slide": true
+    },
+    "damage_query": {
+        "groups": ["Characters"],
+        "filter": []
+    },
+    "damage": {
+        "heavy": 0,
+        "light": 1 
+    },
+    "defence": {
+        "heavy": 90,
+        "light": 0 
+    },
+    "body": {
+        "groups": ["Characters"]
+    },
+    "boid": {
+        "group": 1
+    },
+    "shape": {
+        "type": "Rect",
+        "width": 16.0,
+        "height": 16.0
+    }
+}

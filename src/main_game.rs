@@ -170,6 +170,7 @@ impl State for MainGame {
             ));
         }
 
+        ai::sync_gfx(resources);
         self.decide_reset(&resources.world)
     }
 

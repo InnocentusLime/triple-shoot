@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use lib_game::{AssetKey, DeserializeWithManifestCtx, Resources, WeaponId};
+use lib_game::*;
 
 use serde::Deserialize;
 
@@ -26,7 +26,30 @@ pub struct AmmoPickup {
 #[derive(Debug, Clone, Copy, serde::Deserialize)]
 #[serde(tag = "ai")]
 pub enum NpcAi {
-    JustFollowPlayer { speed: f32 },
+    JustFollowPlayer {
+        speed: f32,
+    },
+    Pouncer {
+        #[serde(skip)]
+        state: PouncerState,
+        speed: f32,
+        pounce_speed: f32,
+        wander_time: f32,
+        wind_time: f32,
+    },
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum PouncerState {
+    Wandering { timer: f32 },
+    WindingUp { timer: f32 },
+    Pouncing { dir: Vec2 },
+}
+
+impl Default for PouncerState {
+    fn default() -> Self {
+        PouncerState::WindingUp { timer: 0.0 }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
