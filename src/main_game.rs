@@ -25,7 +25,16 @@ pub struct MainGame {
 
 impl MainGame {
     pub fn make_state_request() -> StateRequest {
-        let dependencies = [PLAYER, WALL_HORIZ, WALL_VERT, LIGHT, SHOTGUN_PICKUP, DEPLOYER];
+        let dependencies = [
+            PLAYER,
+            WALL_HORIZ,
+            WALL_VERT,
+            LIGHT,
+            SHOTGUN_PICKUP,
+            DEPLOYER,
+            "atlas/grad.png",
+            "atlas/ui.png",
+        ];
 
         StateRequest {
             name: "main game",
@@ -137,5 +146,64 @@ impl State for MainGame {
         player::input(dt, input_model, resources, cmds);
         ai::think(dt, resources);
         spawning::tick(&mut self.wave, self.deployer_prefab, dt, resources, cmds);
+    }
+
+    fn ui(&mut self, resources: &mut Resources, out: &mut Vec<UiElement>) {
+        let Some((_, (hp, data))) = resources
+            .world
+            .query_mut::<(&Hp, &PlayerData)>()
+            .into_iter()
+            .next()
+        else {
+            return;
+        };
+        let center = vec2(SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32) / 2.0;
+        let cooling_down = data.next_shoot > 0.0;
+        let ammo_tint = if cooling_down {
+            Color::from_vec4(Vec3::splat(0.6).extend(1.0))
+        } else {
+            Color::from_vec4(vec4(1.0, 1.0, 1.0, 1.0))
+        };
+        let ammo_pos = center + vec2(resources.game_field_width, resources.game_field_height) / 2.0;
+        let hp_pos = center + vec2(-resources.game_field_width, -resources.game_field_height) / 2.0;
+
+        out.extend([
+            UiElement {
+                tint: ammo_tint,
+                ty: UiElementType::StackCounter {
+                    val: data.shotgun.ammo,
+                    max_val: data.shotgun.max_ammo,
+                    tex_rect_pos: uvec2(9, 3),
+                    tex_rect_size: uvec2(72, 32),
+                    direction: StackDirection::Up,
+                    spacing: -6.0,
+                },
+                anchoring: Anchoring::LeftBot,
+                pos: ammo_pos,
+            },
+            UiElement {
+                tint: Color::from_vec4(vec4(1.0, 1.0, 1.0, 1.0)),
+                ty: UiElementType::StackCounter {
+                    val: hp.hp.max(0) as u32,
+                    max_val: 3,
+                    tex_rect_pos: uvec2(22, 45),
+                    tex_rect_size: uvec2(19, 17),
+                    direction: StackDirection::Left,
+                    spacing: 4.0,
+                },
+                anchoring: Anchoring::Right,
+                pos: hp_pos,
+            },
+        ]);
+
+        if cooling_down {
+            let progress = 1.0 - data.next_shoot / data.shotgun.shoot_cooldown;
+            out.push(UiElement {
+                tint: Color::from_vec4(vec4(1.0, 1.0, 1.0, 1.0)),
+                ty: UiElementType::CircleFill { progress },
+                anchoring: Anchoring::Bot,
+                pos: ammo_pos + vec2(36.0, 0.0),
+            });
+        }
     }
 }
