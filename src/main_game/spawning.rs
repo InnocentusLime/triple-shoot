@@ -1,8 +1,7 @@
+use crate::main_game::spawning_cfg::*;
 use crate::prelude::*;
 
 const DEPLOYER_TIME: f32 = 1.0;
-const ENEMY_TYPE_COUNT: usize = 1;
-const PICKUP_TYPE_COUNT: usize = 1;
 
 pub fn tick(
     wave: &mut Wave,
@@ -31,27 +30,6 @@ pub fn tick(
         }
     }
 }
-
-static WAVES: [WaveCfg; 2] = [
-    WaveCfg {
-        is_pickup_wave: true,
-        pickup_wait: 1.0,
-        pickups: [SpawnEntryCfg { wait: 0.8, weight: 1, quota: 3 }],
-        max_pickups_on_screen: 2,
-        enemies_wait: 1.0,
-        enemies: [SpawnEntryCfg::disabled()],
-        max_enemies_on_screen: 0,
-    },
-    WaveCfg {
-        is_pickup_wave: false,
-        pickup_wait: 1.0,
-        pickups: [SpawnEntryCfg { wait: 1.0, weight: 1, quota: 10 }],
-        max_pickups_on_screen: 2,
-        enemies_wait: 1.0,
-        enemies: [SpawnEntryCfg { wait: 1.0, weight: 1, quota: 20 }],
-        max_enemies_on_screen: 3,
-    },
-];
 
 #[derive(Debug)]
 pub struct Wave {
@@ -249,30 +227,4 @@ fn make_random_spawn_pos(game_field_width: f32, game_field_height: f32) -> Vec2 
         center + Vec2::Y * off + Vec2::X * (32.0 * noise_increment as f32),
     ];
     fastrand::choice(spawnpoints).unwrap()
-}
-
-#[derive(Debug, Clone, Copy)]
-struct WaveCfg {
-    is_pickup_wave: bool,
-
-    pickup_wait: f32,
-    pickups: [SpawnEntryCfg; PICKUP_TYPE_COUNT],
-    max_pickups_on_screen: usize,
-
-    enemies_wait: f32,
-    enemies: [SpawnEntryCfg; ENEMY_TYPE_COUNT],
-    max_enemies_on_screen: usize,
-}
-
-#[derive(Debug, Clone, Copy)]
-struct SpawnEntryCfg {
-    wait: f32,
-    weight: u32,
-    quota: u32,
-}
-
-impl SpawnEntryCfg {
-    const fn disabled() -> SpawnEntryCfg {
-        SpawnEntryCfg { wait: 1.0, weight: 1, quota: 0 }
-    }
 }
