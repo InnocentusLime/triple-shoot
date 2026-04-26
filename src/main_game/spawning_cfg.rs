@@ -16,8 +16,8 @@ pub static WAVES: [WaveCfg; 3] = [
     WaveCfg {
         is_pickup_wave: false,
         pickup_wait: 0.4,
-        pickups: [SpawnEntryCfg { wait: 0.8, weight: 1, quota: 4 }],
-        max_pickups_on_screen: 2,
+        pickups: [SpawnEntryCfg { wait: 0.8, weight: 1, quota: 2 }],
+        max_pickups_on_screen: 1,
         enemies_wait: 0.5,
         enemies: [SpawnEntryCfg { wait: 0.5, weight: 1, quota: 4 }, disabled()],
         max_enemies_on_screen: 2,
@@ -25,7 +25,7 @@ pub static WAVES: [WaveCfg; 3] = [
     WaveCfg {
         is_pickup_wave: false,
         pickup_wait: 1.0,
-        pickups: [SpawnEntryCfg { wait: 0.8, weight: 1, quota: 28 }],
+        pickups: [SpawnEntryCfg { wait: 0.8, weight: 1, quota: 6 }],
         max_pickups_on_screen: 2,
         enemies_wait: 0.5,
         enemies: [
