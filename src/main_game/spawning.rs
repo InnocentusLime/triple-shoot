@@ -87,11 +87,11 @@ impl Wave {
     }
 
     pub fn next_wave(&mut self) -> bool {
-        self.wave_id += 1;
         info!("next wave: {}", self.wave_id);
-        if self.wave_id >= WAVES.len() {
+        if self.wave_id >= WAVES.len() - 1 {
             return false;
         }
+        self.wave_id += 1;
         self.apply_cfg(WAVES[self.wave_id]);
         true
     }
