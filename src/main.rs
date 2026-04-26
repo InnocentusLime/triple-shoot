@@ -1,6 +1,7 @@
 mod components;
 mod main_game;
 mod prelude;
+mod win;
 
 use main_game::MainGame;
 
