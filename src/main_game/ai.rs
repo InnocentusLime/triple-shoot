@@ -9,18 +9,64 @@ pub fn think(dt: f32, resources: &Resources) {
     };
     let mut query = resources
         .world
-        .query::<(&Transform, &mut KinematicControl, &NpcAi)>();
-    for (_, (tf, kin, ai)) in &mut query {
-        match *ai {
+        .query::<(&Transform, &mut KinematicControl, &mut NpcAi, &mut Boid)>();
+    for (_, (tf, kin, ai, boid)) in &mut query {
+        let dr_to_player = player_pos - tf.pos;
+        let dir_to_player = dr_to_player.normalize_or_zero();
+        match ai {
             NpcAi::JustFollowPlayer { speed } => {
-                let dr_to_player = player_pos - tf.pos;
                 let movement_speed = if dr_to_player.length() >= FOLLOWER_SPEEDUP_RADIUS {
-                    2.3 * speed
+                    2.3 * *speed
                 } else {
-                    speed
+                    *speed
                 };
-                kin.dr = (movement_speed * dt) * dr_to_player.normalize_or_zero();
+                kin.dr = (movement_speed * dt) * dir_to_player;
             }
+            NpcAi::Pouncer { state, speed, pounce_speed, wander_time, wind_time } => match state {
+                PouncerState::Wandering { timer } => {
+                    if *timer <= 0.0 {
+                        boid.group = 0;
+                        *state = PouncerState::WindingUp { timer: *wind_time }
+                    } else {
+                        boid.group = 1;
+                        *timer -= dt;
+                        kin.dr = (*speed * dt) * dir_to_player;
+                    }
+                }
+                PouncerState::WindingUp { timer } => {
+                    if *timer <= 0.0 {
+                        *state = PouncerState::Pouncing { dir: dir_to_player };
+                    } else {
+                        *timer -= dt;
+                    }
+                }
+                PouncerState::Pouncing { dir } => {
+                    if kin.collided {
+                        let timer = *wander_time + fastrand::f32() * 1.4;
+                        *state = PouncerState::Wandering { timer }
+                    } else {
+                        kin.dr = (*pounce_speed * dt) * *dir;
+                    }
+                }
+            },
+        }
+    }
+}
+
+pub fn sync_gfx(resources: &Resources) {
+    for (_, (sprite, ai)) in &mut resources.world.query::<(&mut Sprite, &NpcAi)>() {
+        match ai {
+            NpcAi::JustFollowPlayer { .. } => (),
+            NpcAi::Pouncer { state, .. } => match state {
+                PouncerState::Wandering { .. } => {
+                    sprite.tex_rect_pos = uvec2(633, 21);
+                    sprite.tex_rect_size = uvec2(44, 37);
+                }
+                PouncerState::WindingUp { .. } | PouncerState::Pouncing { .. } => {
+                    sprite.tex_rect_pos = uvec2(684, 29);
+                    sprite.tex_rect_size = uvec2(45, 29);
+                }
+            },
         }
     }
 }
