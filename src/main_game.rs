@@ -10,7 +10,7 @@ use crate::prelude::*;
 const PLAYER: &str = "prefab/player.json";
 const WALL_HORIZ: &str = "prefab/wall_horiz.json";
 const WALL_VERT: &str = "prefab/wall_vert.json";
-const LIGHT: &str = "prefab/light.json";
+const FOLLOWER: &str = "prefab/enemy/follower.json";
 const SHOTGUN_PICKUP: &str = "prefab/shotgun_pickup.json";
 const DEPLOYER: &str = "prefab/deployer.json";
 
@@ -32,7 +32,7 @@ impl MainGame {
             PLAYER,
             WALL_HORIZ,
             WALL_VERT,
-            LIGHT,
+            FOLLOWER,
             SHOTGUN_PICKUP,
             DEPLOYER,
             "atlas/grad.png",
@@ -83,7 +83,7 @@ impl MainGame {
 
         let wave = spawning::Wave::new(
             [resources.prefabs.resolve(SHOTGUN_PICKUP).unwrap()],
-            [resources.prefabs.resolve(LIGHT).unwrap(), resources.prefabs.resolve(LIGHT).unwrap()],
+            [resources.prefabs.resolve(FOLLOWER).unwrap(), resources.prefabs.resolve(FOLLOWER).unwrap()],
         );
         let deployer_prefab = resources.prefabs.resolve(DEPLOYER).unwrap();
 
