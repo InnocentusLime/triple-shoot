@@ -6,7 +6,7 @@
     },
     "transform": null,
     "hp": {
-        "hp": 80,
+        "hp": 40,
         "cooldown_length": 0.5
     },
     "knockback": {
