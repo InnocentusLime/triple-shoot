@@ -25,7 +25,6 @@ pub fn think(dt: f32, resources: &Resources) {
             NpcAi::Pouncer { state, speed, pounce_speed, wander_time, wind_time } => match state {
                 PouncerState::Wandering { timer } => {
                     if *timer <= 0.0 {
-                        boid.group = 0;
                         *state = PouncerState::WindingUp { timer: *wind_time }
                     } else {
                         boid.group = 1;
@@ -45,6 +44,7 @@ pub fn think(dt: f32, resources: &Resources) {
                         let timer = *wander_time + fastrand::f32() * 1.4;
                         *state = PouncerState::Wandering { timer }
                     } else {
+                        boid.group = 0;
                         kin.dr = (*pounce_speed * dt) * *dir;
                     }
                 }
