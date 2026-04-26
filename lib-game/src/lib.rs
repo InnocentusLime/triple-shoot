@@ -142,18 +142,7 @@ impl mimiq::EventHandler<AppInit> for App {
         let Some(queued_state) = self.queued_state.take() else {
             return;
         };
-        let is_state_ready = queued_state
-            .dependencies
-            .iter()
-            .all(|dep| self.asset_manager.is_loaded(dep));
-        if is_state_ready {
-            info!("queued state ready: {:?}", queued_state.name);
-            self.resources.world.clear();
-            self.state = (queued_state.constructor)(&mut self.resources, &mut self.cmds);
-            self.cmds.run_on(&mut self.resources.world);
-        } else {
-            self.queued_state = Some(queued_state)
-        }
+        self.apply_state_if_needed(queued_state, false);
     }
 
     fn update(&mut self, dt: std::time::Duration) {
@@ -174,8 +163,7 @@ impl mimiq::EventHandler<AppInit> for App {
                     "new state ({:?}) requested with deps: {:?}",
                     request.name, request.dependencies
                 );
-                self.queue_assets(request.dependencies.iter());
-                self.queued_state = Some(request);
+                self.apply_state_if_needed(request, false);
             }
         }
     }
@@ -248,6 +236,25 @@ impl App {
                 continue;
             }
             warn!("unknown dep: {unloaded:?}");
+        }
+    }
+
+    fn apply_state_if_needed(&mut self, request: StateRequest, resubmitting: bool) {
+        let is_state_ready = request
+            .dependencies
+            .iter()
+            .all(|dep| self.asset_manager.is_loaded(dep));
+        if is_state_ready {
+            info!("queued state ready: {:?}", request.name);
+            self.resources.world.clear();
+            self.state = (request.constructor)(&mut self.resources, &mut self.cmds);
+            self.cmds.run_on(&mut self.resources.world);
+        } else if !resubmitting {
+            // ^^ only queue assets if the caller is not resubmitting this state
+            self.queue_assets(request.dependencies.iter());
+            self.queued_state = Some(request);
+        } else {
+            self.queued_state = Some(request);
         }
     }
 }
