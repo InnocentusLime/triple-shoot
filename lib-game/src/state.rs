@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use crate::collisions::CollisionSolver;
 use crate::input::InputModel;
+use crate::ui::UiElement;
 use crate::{DebugCommand, Resources};
 
 use hecs::CommandBuffer;
@@ -59,6 +60,8 @@ pub trait State: 'static {
         collisions: &CollisionSolver,
         cmds: &mut CommandBuffer,
     ) -> Option<StateRequest>;
+
+    fn ui(&mut self, resources: &mut Resources, out: &mut Vec<UiElement>);
 }
 
 pub struct BootState {
@@ -96,4 +99,6 @@ impl State for BootState {
     ) -> Option<StateRequest> {
         self.redirect.take()
     }
+
+    fn ui(&mut self, _resources: &mut Resources, _out: &mut Vec<UiElement>) {}
 }

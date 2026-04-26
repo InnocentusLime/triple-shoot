@@ -2,6 +2,7 @@ pub mod components;
 
 use crate::components::*;
 use crate::prelude::*;
+use crate::ui::*;
 
 use bytemuck::{Pod, Zeroable};
 use mimiq::util::{ShapeBatcher, SpriteBatcher};
@@ -23,7 +24,12 @@ pub struct Render {
 
     pub gamescreen_verts: mimiq::VertexBuffer<QuadVert>,
     pub gamescreen_indicies: mimiq::IndexBuffer,
+    pub quad_verts: mimiq::VertexBuffer<QuadVert>,
     pub gamescreen_pipeline: mimiq::Pipeline<PixelPerfectPipelineMeta>,
+
+    pub ui_elements: Vec<UiElement>,
+    pub basic_elements_batcher: SpriteBatcher,
+    pub circle_fill_pipeline: mimiq::Pipeline<SpinnerPipelineMeta>,
 }
 
 impl Render {
@@ -54,6 +60,18 @@ impl Render {
             render_world: true,
             debug_draws,
             enabled_debug_draws: HashSet::new(),
+            quad_verts: resources.gl_ctx.new_vertex_buffer(
+                BufferUsage::Immutable,
+                &[
+                    QuadVert { pos: vec2(-1.0, -1.0), uv: vec2(0.0, 0.0) },
+                    QuadVert { pos: vec2(1.0, -1.0), uv: vec2(1.0, 0.0) },
+                    QuadVert { pos: vec2(1.0, 1.0), uv: vec2(1.0, 1.0) },
+                    QuadVert { pos: vec2(-1.0, 1.0), uv: vec2(0.0, 1.0) },
+                ],
+            ),
+            ui_elements: Vec::new(),
+            basic_elements_batcher: SpriteBatcher::new_from_size(&resources.gl_ctx, 100),
+            circle_fill_pipeline: resources.gl_ctx.new_pipeline(),
         }
     }
 
@@ -72,6 +90,8 @@ impl Render {
                 if self.render_world {
                     self.draw_sprites(resources, view_projection);
                 }
+
+                self.draw_ui_elements(resources, view_projection);
 
                 self.gizmos.basic_draw(
                     &resources.gl_ctx,
@@ -132,6 +152,136 @@ impl Render {
             &resources.sprite_pipeline,
             texture,
         );
+    }
+
+    fn draw_ui_elements(&mut self, resources: &Resources, view_projection: Mat4) {
+        let Some(ui_texture) = resources.textures.resolve("atlas/ui.png") else {
+            return;
+        };
+        let Some(ui_texture) = resources.textures.get(ui_texture) else {
+            return;
+        };
+        let Some(grad_texture) = resources.textures.resolve("atlas/grad.png") else {
+            return;
+        };
+        let Some(grad_texture) = resources.textures.get(grad_texture) else {
+            return;
+        };
+
+        for element in &self.ui_elements {
+            let rect = element.rect();
+            match element.ty {
+                UiElementType::StackCounter {
+                    val,
+                    tex_rect_pos,
+                    tex_rect_size,
+                    direction,
+                    spacing,
+                    ..
+                } => Self::buffer_stack(
+                    &mut self.basic_elements_batcher,
+                    element.tint,
+                    rect,
+                    val,
+                    spacing,
+                    direction,
+                    tex_rect_pos,
+                    tex_rect_size,
+                ),
+                _ => (),
+            }
+        }
+
+        self.basic_elements_batcher.draw(
+            &resources.gl_ctx,
+            view_projection,
+            &resources.sprite_pipeline,
+            ui_texture,
+        );
+
+        for element in &self.ui_elements {
+            let rect = element.rect();
+            match element.ty {
+                UiElementType::CircleFill { progress } => {
+                    self.draw_circle_fill(resources, rect, progress, view_projection, grad_texture)
+                }
+                _ => (),
+            }
+        }
+    }
+
+    fn buffer_stack(
+        batcher: &mut SpriteBatcher,
+        tint: Color,
+        rect: UiRect,
+        val: u32,
+        spacing: f32,
+        direction: StackDirection,
+        tex_rect_pos: UVec2,
+        tex_rect_size: UVec2,
+    ) {
+        let size = tex_rect_size.as_vec2();
+        let Vec2 { x: half_w, y: half_h } = size / 2.0;
+
+        let start: Vec2;
+        let step: Vec2;
+        match direction {
+            StackDirection::Left => {
+                start = rect.left_top + rect.size + vec2(-half_w, -half_h);
+                step = vec2(-size.x + -spacing, 0.0);
+            }
+            StackDirection::Right => {
+                start = rect.left_top + vec2(half_w, half_h);
+                step = vec2(size.x + spacing, 0.0);
+            }
+            StackDirection::Down => {
+                start = rect.left_top + vec2(half_w, half_h);
+                step = vec2(0.0, size.y + spacing);
+            }
+            StackDirection::Up => {
+                start = rect.left_top + rect.size + vec2(-half_w, -half_h);
+                step = vec2(0.0, -size.y + -spacing);
+            }
+        };
+
+        dump!("start: {start:.2}");
+        for idx in 0..val {
+            let pos = start + step * idx as f32;
+            batcher.add_sprite(mimiq::util::Sprite {
+                tex_rect_pos,
+                tex_rect_size,
+                color: tint,
+                transform: Affine2::from_translation(pos),
+            });
+        }
+    }
+
+    fn draw_circle_fill(
+        &self,
+        resources: &Resources,
+        rect: UiRect,
+        progress: f32,
+        view_projection: Mat4,
+        grad_texture: &Texture2D,
+    ) {
+        let scale = grad_texture.size().as_vec2() / 2.0;
+        let model = Mat4::from_scale_rotation_translation(
+            scale.extend(1.0),
+            Quat::IDENTITY,
+            (rect.left_top + rect.size / 2.0).extend(0.0),
+        );
+        resources.gl_ctx.draw(DrawCall {
+            pipeline: &self.circle_fill_pipeline,
+            base_element: 0,
+            num_elements: 6,
+            vertex_buffer: &self.quad_verts,
+            index_buffer: &self.gamescreen_indicies,
+            images: &grad_texture,
+            uniforms: &SpinnerPipelineUniforms {
+                view_projection: view_projection * model,
+                progress,
+            },
+        });
     }
 
     pub fn buffer_sprites(&mut self, world: &mut World) {
@@ -208,4 +358,39 @@ impl PipelineMeta for PixelPerfectPipelineMeta {
     type Vertex = QuadVert;
     type Uniforms = PixelPerfectUniforms;
     const PARAMS: PipelineParams = default_pipeline_params();
+}
+
+pub struct SpinnerPipelineMeta;
+
+impl PipelineMeta for SpinnerPipelineMeta {
+    const VERTEX_SHADER: &str = include_str!("shaders/spinn.vert");
+    const FRAGMENT_SHADER: &str = include_str!("shaders/spinn.frag");
+
+    type Images = Texture2D;
+    const IMAGES_NAMES: &str = "tex";
+
+    type Vertex = QuadVert;
+    type Uniforms = SpinnerPipelineUniforms;
+    const PARAMS: PipelineParams = mimiq::PipelineParams {
+        blending: mimiq::Blending::All(mimiq::BlendFunc {
+            equation: mimiq::BlendEquation::Add,
+            source: mimiq::BlendFactor::Value(mimiq::BlendValue::SrcAlpha),
+            dest: mimiq::BlendFactor::OneMinusValue(mimiq::BlendValue::SrcAlpha),
+        }),
+        ..default_pipeline_params()
+    };
+}
+
+#[repr(C)]
+#[derive(Debug, Pod, Zeroable, Clone, Copy)]
+pub struct SpinnerPipelineUniforms {
+    pub view_projection: Mat4,
+    pub progress: f32,
+}
+
+impl UniformBlock for SpinnerPipelineUniforms {
+    const FIELDS: &[UniformField] = &[
+        uniform_of!(SpinnerPipelineUniforms, view_projection),
+        uniform_of!(SpinnerPipelineUniforms, progress),
+    ];
 }

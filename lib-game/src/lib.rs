@@ -7,6 +7,7 @@ mod prelude;
 mod projectile;
 mod render;
 mod resolution;
+mod ui;
 
 #[cfg(feature = "dbg")]
 pub mod dbg;
@@ -19,6 +20,7 @@ pub use input::{InputModel, WeaponId};
 pub use prefab::spawn_prefab;
 pub use prelude::*;
 pub use state::*;
+pub use ui::*;
 
 use std::borrow::Cow;
 use std::path::Path;
@@ -182,6 +184,9 @@ impl mimiq::EventHandler<AppInit> for App {
         self.input.handle_event(&event);
 
         if event == WindowEvent::RedrawRequested {
+            self.render.ui_elements.clear();
+            self.state
+                .ui(&mut self.resources, &mut self.render.ui_elements);
             self.render.render(&mut self.resources);
         }
     }
