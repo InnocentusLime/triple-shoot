@@ -9,6 +9,12 @@ pub fn register_components(prefab_factory: &mut lib_game::PrefabFactory<Resource
     prefab_factory.register_component::<NpcAi>("npc");
     prefab_factory.register_component::<AmmoPickup>("ammo_pickup");
     prefab_factory.register_component::<Deployer>("deployer");
+    prefab_factory.register_component::<Boid>("boid");
+}
+
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
+pub struct Boid {
+    pub group: u32,
 }
 
 #[derive(Debug, Clone, Copy, serde::Deserialize)]

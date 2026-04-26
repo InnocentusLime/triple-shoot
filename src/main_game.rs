@@ -182,6 +182,7 @@ impl State for MainGame {
     ) {
         player::input(dt, input_model, resources, cmds);
         ai::think(dt, resources);
+        ai::boid_steering(resources);
         spawning::tick(&mut self.wave, self.deployer_prefab, dt, resources, cmds);
         self.reset_confirmed = player_wants_restart(&resources.world, input_model);
     }

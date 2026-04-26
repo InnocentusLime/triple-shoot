@@ -40,6 +40,9 @@
     "body": {
         "groups": ["Characters"]
     },
+    "boid": {
+        "group": 1
+    },
     "shape": {
         "type": "Rect",
         "width": 16.0,
