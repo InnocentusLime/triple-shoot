@@ -11,6 +11,7 @@ const PLAYER: &str = "prefab/player.json";
 const WALL_HORIZ: &str = "prefab/wall_horiz.json";
 const WALL_VERT: &str = "prefab/wall_vert.json";
 const FOLLOWER: &str = "prefab/enemy/follower.json";
+const POUNCER: &str = "prefab/enemy/pouncer.json";
 const SHOTGUN_PICKUP: &str = "prefab/shotgun_pickup.json";
 const DEPLOYER: &str = "prefab/deployer.json";
 
@@ -33,6 +34,7 @@ impl MainGame {
             WALL_HORIZ,
             WALL_VERT,
             FOLLOWER,
+            POUNCER,
             SHOTGUN_PICKUP,
             DEPLOYER,
             "atlas/grad.png",
@@ -85,7 +87,7 @@ impl MainGame {
             [resources.prefabs.resolve(SHOTGUN_PICKUP).unwrap()],
             [
                 resources.prefabs.resolve(FOLLOWER).unwrap(),
-                resources.prefabs.resolve(FOLLOWER).unwrap(),
+                resources.prefabs.resolve(POUNCER).unwrap(),
             ],
         );
         let deployer_prefab = resources.prefabs.resolve(DEPLOYER).unwrap();
