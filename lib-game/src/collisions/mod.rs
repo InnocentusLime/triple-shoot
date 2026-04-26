@@ -103,6 +103,13 @@ fn process_character_movement(
 
         dr -= dr.dot(normal) * normal;
         dr += normal * CHAR_NORMAL_NUDGE;
+
+        // Overwrite dr's length to be truly equal to remaining dr.
+        // This is useful when, for instance, you are doing a diagonal
+        // movement against a wall. Without this patch you will go noticeably slower.
+        let remaining_translation = offlen - toi;
+        dr = dr.normalize_or_zero() * remaining_translation;
+
         collided = true;
         if !slide {
             break;

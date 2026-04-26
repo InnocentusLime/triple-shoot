@@ -83,7 +83,10 @@ impl MainGame {
 
         let wave = spawning::Wave::new(
             [resources.prefabs.resolve(SHOTGUN_PICKUP).unwrap()],
-            [resources.prefabs.resolve(FOLLOWER).unwrap(), resources.prefabs.resolve(FOLLOWER).unwrap()],
+            [
+                resources.prefabs.resolve(FOLLOWER).unwrap(),
+                resources.prefabs.resolve(FOLLOWER).unwrap(),
+            ],
         );
         let deployer_prefab = resources.prefabs.resolve(DEPLOYER).unwrap();
 
