@@ -39,6 +39,7 @@ impl CollisionSolver {
                 process_character_movement(&mut self.solver, dr, character, kin.slide);
             tf.pos = lib_col::conv::crate_vector_to_topleft_corner(new_tf.translation);
             kin.collided = collided;
+            kin.dr = Vec2::ZERO
         }
     }
 
