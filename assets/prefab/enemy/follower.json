@@ -2,7 +2,7 @@
     "team": "Enemy",
     "npc": {
         "ai": "JustFollowPlayer",
-        "speed": 24.0
+        "speed": 48.0
     },
     "transform": null,
     "hp": {

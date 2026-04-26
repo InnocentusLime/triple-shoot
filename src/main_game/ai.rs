@@ -1,6 +1,7 @@
 use crate::prelude::*;
 
 const BOIDS_SEPARATION_RADIUS: f32 = 20.0;
+const FOLLOWER_SPEEDUP_RADIUS: f32 = 128.0;
 
 pub fn think(dt: f32, resources: &Resources) {
     let Some(player_pos) = get_player_pos(&resources.world) else {
@@ -10,10 +11,15 @@ pub fn think(dt: f32, resources: &Resources) {
         .world
         .query::<(&Transform, &mut KinematicControl, &NpcAi)>();
     for (_, (tf, kin, ai)) in &mut query {
-        match ai {
+        match *ai {
             NpcAi::JustFollowPlayer { speed } => {
-                let move_dir = (player_pos - tf.pos).normalize_or_zero();
-                kin.dr = (*speed * dt) * move_dir;
+                let dr_to_player = player_pos - tf.pos;
+                let movement_speed = if dr_to_player.length() >= FOLLOWER_SPEEDUP_RADIUS {
+                    2.3 * speed
+                } else {
+                    speed
+                };
+                kin.dr = (movement_speed * dt) * dr_to_player.normalize_or_zero();
             }
         }
     }
