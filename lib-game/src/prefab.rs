@@ -58,7 +58,7 @@ impl DeserializeWithManifestCtx<Resources> for Sprite {
             texture,
             tex_rect_pos: manifest.tex_rect_pos,
             tex_rect_size: manifest.tex_rect_size,
-            color: mimiq::WHITE,
+            color: Color::WHITE,
             sort_offset: manifest.sort_offset,
             local_offset: manifest.local_offset,
         })

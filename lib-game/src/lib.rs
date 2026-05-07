@@ -102,11 +102,12 @@ pub struct App {
 
 impl mimiq::EventHandler<AppInit> for App {
     fn init(
-        gl_ctx: Rc<mimiq::GlContext>,
+        gl_ctx: Rc<mimiq::graphics::GlContext>,
+        al_ctx: Rc<mimiq::audio::AlContext>,
         fs_server: Rc<dyn mimiq::FsServer>,
         init: AppInit,
     ) -> Self {
-        let resources = Resources::new(gl_ctx);
+        let resources = Resources::new(gl_ctx, al_ctx);
 
         let mut prefab_factory = init.prefab_factory;
         prefab::register_libgame_components(&mut prefab_factory);
@@ -175,7 +176,10 @@ impl mimiq::EventHandler<AppInit> for App {
             self.render.ui_elements.clear();
             self.state
                 .ui(&mut self.resources, &mut self.render.ui_elements);
-            self.render.render(&mut self.resources);
+
+            if let Err(e) = self.render.render(&mut self.resources) {
+                warn!("Render error: {e:#}");
+            }
         }
     }
 
@@ -261,44 +265,53 @@ impl App {
 
 pub struct Resources {
     pub world: World,
-    pub gl_ctx: Rc<mimiq::GlContext>,
-    pub sprite_pipeline: mimiq::Pipeline<mimiq::util::BasicSpritePipelineMeta>,
-    pub basic_pipeline: mimiq::Pipeline<mimiq::util::BasicPipelineMeta>,
-    pub gamescreen: mimiq::RenderPass,
-    pub textures: AssetContainer<mimiq::Texture2D>,
+    pub gl_ctx: Rc<mimiq::graphics::GlContext>,
+    pub al_ctx: Rc<mimiq::audio::AlContext>,
+    pub gamescreen: mimiq::graphics::RenderPass,
+    pub textures: AssetContainer<mimiq::graphics::Texture2D>,
     pub prefabs: AssetContainer<BuiltEntityClone>,
     pub game_field_width: f32,
     pub game_field_height: f32,
 }
 
 impl Resources {
-    pub fn new(gl_ctx: Rc<mimiq::GlContext>) -> Self {
-        let gamescreen_texture = gl_ctx.new_empty_texture(
-            crate::resolution::SCREEN_WIDTH,
-            crate::resolution::SCREEN_HEIGHT,
-            mimiq::Texture2DParams {
-                internal_format: mimiq::Texture2DFormat::RGBA8,
-                min_filter: mimiq::FilterMode::Nearest,
-                mag_filter: mimiq::FilterMode::Nearest,
-                ..Default::default()
-            },
-        );
+    pub fn new(
+        gl_ctx: Rc<mimiq::graphics::GlContext>,
+        al_ctx: Rc<mimiq::audio::AlContext>,
+    ) -> Self {
+        let gamescreen_texture = gl_ctx
+            .new_empty_texture(
+                mimiq::graphics::Texture2DFormat::RGBA8,
+                crate::resolution::SCREEN_WIDTH,
+                crate::resolution::SCREEN_HEIGHT,
+                mimiq::graphics::TextureWrap::Clamp,
+                mimiq::graphics::FilterMode::Nearest,
+                mimiq::graphics::FilterMode::Nearest,
+            )
+            .unwrap();
 
         Resources {
             world: World::new(),
-            sprite_pipeline: gl_ctx.new_pipeline(),
-            gamescreen: gl_ctx.new_render_pass(vec![gamescreen_texture], None),
-            basic_pipeline: gl_ctx.new_pipeline(),
+            gamescreen: gl_ctx
+                .new_render_pass(vec![gamescreen_texture], None)
+                .unwrap(),
             textures: AssetContainer::new(),
             prefabs: AssetContainer::new(),
             gl_ctx,
+            al_ctx,
             game_field_width: 400.0,
             game_field_height: 400.0,
         }
     }
 
-    fn init_prefab(&mut self, _fs_resolver: &FsResolver, prefab: BuiltEntityClone, src: &Path) {
+    fn init_prefab(
+        &mut self,
+        _fs_resolver: &FsResolver,
+        prefab: BuiltEntityClone,
+        src: &Path,
+    ) -> anyhow::Result<()> {
         self.prefabs.insert(src, prefab);
+        Ok(())
     }
 
     fn init_texture(
@@ -306,16 +319,14 @@ impl Resources {
         _fs_resolver: &FsResolver,
         image: mimiq::image::DynamicImage,
         src: &Path,
-    ) {
+    ) -> anyhow::Result<()> {
         let tex = self.gl_ctx.new_texture(
             image,
-            mimiq::Texture2DParams {
-                internal_format: mimiq::Texture2DFormat::RGBA8,
-                wrap: mimiq::TextureWrap::Clamp,
-                min_filter: mimiq::FilterMode::Nearest,
-                mag_filter: mimiq::FilterMode::Nearest,
-            },
-        );
+            mimiq::graphics::TextureWrap::Clamp,
+            mimiq::graphics::FilterMode::Nearest,
+            mimiq::graphics::FilterMode::Nearest,
+        )?;
         self.textures.insert(src, tex);
+        Ok(())
     }
 }

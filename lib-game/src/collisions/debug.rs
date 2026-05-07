@@ -2,7 +2,7 @@ use crate::collisions::*;
 use crate::components::*;
 
 use hecs::World;
-use mimiq::Color;
+use mimiq::graphics::Color;
 use mimiq::util::ShapeBatcher;
 
 pub fn draw_physics_debug(world: &mut World, gizmos: &mut ShapeBatcher) {
@@ -19,11 +19,8 @@ pub fn draw_physics_debug(world: &mut World, gizmos: &mut ShapeBatcher) {
 
 fn draw_queries<const ID: usize>(world: &World, gizmos: &mut ShapeBatcher) {
     for (_, (tf, shape, query)) in &mut world.query::<(&Transform, &Shape, &CollisionQuery<ID>)>() {
-        let color = if query.has_collided() {
-            mimiq::Color::new(0.00, 0.93, 0.80, 1.00)
-        } else {
-            mimiq::GREEN
-        };
+        let color =
+            if query.has_collided() { Color::new(0.00, 0.93, 0.80, 1.00) } else { Color::GREEN };
 
         draw_shape_lines(gizmos, tf, shape, color);
     }
@@ -31,7 +28,7 @@ fn draw_queries<const ID: usize>(world: &World, gizmos: &mut ShapeBatcher) {
 
 fn draw_bodies(world: &mut World, gizmos: &mut ShapeBatcher) {
     for (_, (tf, shape, _tag)) in world.query_mut::<(&Transform, &Shape, &BodyTag)>() {
-        draw_shape(gizmos, tf, shape, mimiq::DARKBLUE);
+        draw_shape(gizmos, tf, shape, Color::DARKBLUE);
     }
 }
 
