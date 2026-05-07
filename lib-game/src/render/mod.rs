@@ -1,16 +1,20 @@
 pub mod components;
 
+mod sprites;
+
 use crate::components::*;
 use crate::prelude::*;
 use crate::ui::*;
 
+use anyhow::Context;
 use bytemuck::{Pod, Zeroable};
-use mimiq::util::{ShapeBatcher, SpriteBatcher};
-use mimiq::{
-    BLACK, BLUE, BufferUsage, Clear, DrawCall, PipelineMeta, PipelineParams, Texture2D,
-    UniformBlock, UniformField, Vertex, VertexField, attribute_of, default_pipeline_params,
-    uniform_of,
-};
+use mimiq::UniformBlock;
+use mimiq::Vertex;
+use mimiq::graphics::*;
+use mimiq::util;
+use mimiq::util::{BasicPipeline, ShapeBatcher};
+
+use sprites::*;
 
 pub struct Render {
     pub curr_texture: AssetKey,
@@ -22,14 +26,18 @@ pub struct Render {
     pub debug_draws: HashMap<String, fn(&mut World, &mut ShapeBatcher)>,
     pub enabled_debug_draws: HashSet<String>,
 
-    pub gamescreen_verts: mimiq::VertexBuffer<QuadVert>,
-    pub gamescreen_indicies: mimiq::IndexBuffer,
-    pub quad_verts: mimiq::VertexBuffer<QuadVert>,
-    pub gamescreen_pipeline: mimiq::Pipeline<PixelPerfectPipelineMeta>,
+    pub gamescreen_verts: VertexBuffer<QuadVert>,
+    pub gamescreen_indicies: IndexBuffer,
+    pub quad_verts: VertexBuffer<QuadVert>,
 
     pub ui_elements: Vec<UiElement>,
     pub basic_elements_batcher: SpriteBatcher,
-    pub circle_fill_pipeline: mimiq::Pipeline<SpinnerPipelineMeta>,
+
+    pub sprite_pipeline: SpritePipeline,
+    pub basic_pipeline: BasicPipeline,
+    pub gamescreen_pipeline:
+        Pipeline<QuadVert, PixelPerfectUniforms, util::BasicTexImages<'static>>,
+    pub circle_fill_pipeline: Pipeline<QuadVert, SpinnerUniforms, util::BasicTexImages<'static>>,
 }
 
 impl Render {
@@ -42,40 +50,71 @@ impl Render {
 
         Self {
             curr_texture: INVALID_ASSET,
-            sprite_batcher: SpriteBatcher::new_from_size(&resources.gl_ctx, 1_000),
-            gizmos: ShapeBatcher::new_from_size(&resources.gl_ctx, 20_000, 20_000),
-            gamescreen_verts: resources.gl_ctx.new_vertex_buffer(
-                BufferUsage::Dynamic,
-                &[
-                    QuadVert { pos: vec2(-1.0, -1.0), uv: vec2(0.0, 0.0) },
-                    QuadVert { pos: vec2(1.0, -1.0), uv: vec2(1.0, 0.0) },
-                    QuadVert { pos: vec2(1.0, 1.0), uv: vec2(1.0, 1.0) },
-                    QuadVert { pos: vec2(-1.0, 1.0), uv: vec2(0.0, 1.0) },
-                ],
-            ),
+            sprite_batcher: SpriteBatcher::new_from_size(&resources.gl_ctx, 1_000).unwrap(),
+            gizmos: ShapeBatcher::new_from_size(&resources.gl_ctx, 20_000, 20_000).unwrap(),
+            gamescreen_verts: resources
+                .gl_ctx
+                .new_vertex_buffer(
+                    BufferUsage::Dynamic,
+                    &[
+                        QuadVert { pos: vec2(-1.0, -1.0), uv: vec2(0.0, 0.0) },
+                        QuadVert { pos: vec2(1.0, -1.0), uv: vec2(1.0, 0.0) },
+                        QuadVert { pos: vec2(1.0, 1.0), uv: vec2(1.0, 1.0) },
+                        QuadVert { pos: vec2(-1.0, 1.0), uv: vec2(0.0, 1.0) },
+                    ],
+                )
+                .unwrap(),
             gamescreen_indicies: resources
                 .gl_ctx
-                .new_index_buffer(BufferUsage::Immutable, &[0, 1, 2, 0, 2, 3]),
-            gamescreen_pipeline: resources.gl_ctx.new_pipeline(),
+                .new_index_buffer(BufferUsage::Immutable, &[0, 1, 2, 0, 2, 3])
+                .unwrap(),
             render_world: true,
             debug_draws,
             enabled_debug_draws: HashSet::new(),
-            quad_verts: resources.gl_ctx.new_vertex_buffer(
-                BufferUsage::Immutable,
-                &[
-                    QuadVert { pos: vec2(-1.0, -1.0), uv: vec2(0.0, 0.0) },
-                    QuadVert { pos: vec2(1.0, -1.0), uv: vec2(1.0, 0.0) },
-                    QuadVert { pos: vec2(1.0, 1.0), uv: vec2(1.0, 1.0) },
-                    QuadVert { pos: vec2(-1.0, 1.0), uv: vec2(0.0, 1.0) },
-                ],
-            ),
+            quad_verts: resources
+                .gl_ctx
+                .new_vertex_buffer(
+                    BufferUsage::Immutable,
+                    &[
+                        QuadVert { pos: vec2(-1.0, -1.0), uv: vec2(0.0, 0.0) },
+                        QuadVert { pos: vec2(1.0, -1.0), uv: vec2(1.0, 0.0) },
+                        QuadVert { pos: vec2(1.0, 1.0), uv: vec2(1.0, 1.0) },
+                        QuadVert { pos: vec2(-1.0, 1.0), uv: vec2(0.0, 1.0) },
+                    ],
+                )
+                .unwrap(),
             ui_elements: Vec::new(),
-            basic_elements_batcher: SpriteBatcher::new_from_size(&resources.gl_ctx, 100),
-            circle_fill_pipeline: resources.gl_ctx.new_pipeline(),
+            basic_elements_batcher: SpriteBatcher::new_from_size(&resources.gl_ctx, 100).unwrap(),
+
+            sprite_pipeline: new_sprite_pipeline(&resources.gl_ctx).unwrap(),
+            basic_pipeline: util::new_basic_pipeline(&resources.gl_ctx).unwrap(),
+            gamescreen_pipeline: resources
+                .gl_ctx
+                .new_pipeline(
+                    include_str!("shaders/pixel_perfect.vert"),
+                    include_str!("shaders/pixel_perfect.frag"),
+                    default_pipeline_params(),
+                )
+                .unwrap(),
+            circle_fill_pipeline: resources
+                .gl_ctx
+                .new_pipeline(
+                    include_str!("shaders/spinn.vert"),
+                    include_str!("shaders/spinn.frag"),
+                    PipelineParams {
+                        blending: Blending::All(BlendFunc {
+                            equation: BlendEquation::Add,
+                            source: BlendFactor::Value(BlendValue::SrcAlpha),
+                            dest: BlendFactor::OneMinusValue(BlendValue::SrcAlpha),
+                        }),
+                        ..default_pipeline_params()
+                    },
+                )
+                .unwrap(),
         }
     }
 
-    pub fn render(&mut self, resources: &mut Resources) {
+    pub fn render(&mut self, resources: &mut Resources) -> anyhow::Result<()> {
         self.buffer_sprites(&mut resources.world);
         for debug_draw_name in self.enabled_debug_draws.iter() {
             let ddraw = self.debug_draws[debug_draw_name];
@@ -84,25 +123,33 @@ impl Render {
 
         resources
             .gamescreen
-            .pass(Clear::depth_color(BLUE), |width, height| {
+            .pass(Clear::depth_color(Color::BLUE), |width, height| {
                 let view_projection =
                     Mat4::orthographic_rh_gl(0.0, width as f32, height as f32, 0.0, 0.0, 100.0);
                 if self.render_world {
-                    self.draw_sprites(resources, view_projection);
+                    self.draw_sprites(resources, view_projection)?;
                 }
 
-                self.draw_ui_elements(resources, view_projection);
+                self.draw_ui_elements(resources, view_projection)?;
 
-                self.gizmos.basic_draw(
-                    &resources.gl_ctx,
-                    view_projection,
-                    &resources.basic_pipeline,
-                );
-            });
+                let num_elements = self.gizmos.flush();
+                self.basic_pipeline.draw(
+                    0,
+                    num_elements,
+                    &self.gizmos.0.vertices,
+                    &self.gizmos.0.indicies,
+                    &NoImages,
+                    &util::BasicPipelineUniforms { view_projection },
+                )?;
+                self.gizmos.clear();
+
+                Ok(())
+            })
+            .context("world render")?;
 
         resources
             .gl_ctx
-            .default_pass(Clear::depth_color(BLACK), |width, height| {
+            .default_pass(Clear::depth_color(Color::BLACK), |width, height| {
                 let (left, right, top, bottom) =
                     crate::resolution::native_scaled_quad_points(width, height);
                 self.gamescreen_verts.update(&[
@@ -115,22 +162,26 @@ impl Render {
                 dump!("Default pass dimensions: ({width}, {height})");
                 let view_projection =
                     Mat4::orthographic_rh_gl(0.0, width as f32, height as f32, 0.0, 0.0, 100.0);
-                resources.gl_ctx.draw(DrawCall {
-                    pipeline: &self.gamescreen_pipeline,
-                    base_element: 0,
-                    num_elements: 6,
-                    vertex_buffer: &self.gamescreen_verts,
-                    index_buffer: &self.gamescreen_indicies,
-                    images: &resources.gamescreen.color_attachments()[0],
-                    uniforms: &PixelPerfectUniforms {
+                self.gamescreen_pipeline.draw(
+                    0,
+                    6,
+                    &self.gamescreen_verts,
+                    &self.gamescreen_indicies,
+                    &util::BasicTexImages { tex: &resources.gamescreen.color_attachments()[0] },
+                    &PixelPerfectUniforms {
                         res: vec2(width as f32, height as f32),
                         view_projection,
                     },
-                });
-            });
+                )?;
+
+                Ok(())
+            })
+            .context("screen render")?;
+
+        Ok(())
     }
 
-    fn draw_sprites(&mut self, resources: &Resources, view_projection: Mat4) {
+    fn draw_sprites(&mut self, resources: &Resources, view_projection: Mat4) -> Result<()> {
         // TODO: need sprite length
         // dump!("sprites drawn: {}", self.sprite_buffer.len());
 
@@ -143,29 +194,34 @@ impl Render {
 
         let Some(texture) = resources.textures.get(self.curr_texture) else {
             // warn!("No texture {:?}", sprite.texture);
-            return;
+            return Ok(());
         };
 
-        self.sprite_batcher.draw(
-            &resources.gl_ctx,
-            view_projection,
-            &resources.sprite_pipeline,
-            texture,
-        );
+        let num_elements = self.sprite_batcher.flush();
+        self.sprite_pipeline.draw(
+            0,
+            num_elements,
+            &self.sprite_batcher.0.vertices,
+            &self.sprite_batcher.0.indicies,
+            &util::BasicTexImages { tex: texture },
+            &SpritePipelineUniforms { view_projection, width_height: texture.size().as_vec2() },
+        )
     }
 
-    fn draw_ui_elements(&mut self, resources: &Resources, view_projection: Mat4) {
+    fn draw_ui_elements(&mut self, resources: &Resources, view_projection: Mat4) -> Result<()> {
+        self.basic_elements_batcher.clear();
+
         let Some(ui_texture) = resources.textures.resolve("atlas/ui.png") else {
-            return;
+            return Ok(());
         };
         let Some(ui_texture) = resources.textures.get(ui_texture) else {
-            return;
+            return Ok(());
         };
         let Some(grad_texture) = resources.textures.resolve("atlas/grad.png") else {
-            return;
+            return Ok(());
         };
         let Some(grad_texture) = resources.textures.get(grad_texture) else {
-            return;
+            return Ok(());
         };
 
         for element in &self.ui_elements {
@@ -192,22 +248,27 @@ impl Render {
             }
         }
 
-        self.basic_elements_batcher.draw(
-            &resources.gl_ctx,
-            view_projection,
-            &resources.sprite_pipeline,
-            ui_texture,
-        );
+        let num_elements = self.basic_elements_batcher.flush();
+        self.sprite_pipeline.draw(
+            0,
+            num_elements,
+            &self.basic_elements_batcher.0.vertices,
+            &self.basic_elements_batcher.0.indicies,
+            &util::BasicTexImages { tex: ui_texture },
+            &SpritePipelineUniforms { view_projection, width_height: ui_texture.size().as_vec2() },
+        )?;
 
         for element in &self.ui_elements {
             let rect = element.rect();
             match element.ty {
                 UiElementType::CircleFill { progress } => {
-                    self.draw_circle_fill(resources, rect, progress, view_projection, grad_texture)
+                    self.draw_circle_fill(rect, progress, view_projection, grad_texture)?
                 }
                 _ => (),
             }
         }
+
+        Ok(())
     }
 
     fn buffer_stack(
@@ -247,10 +308,10 @@ impl Render {
         dump!("start: {start:.2}");
         for idx in 0..val {
             let pos = start + step * idx as f32;
-            batcher.add_sprite(mimiq::util::Sprite {
+            batcher.add_sprite(RenderSprite {
+                color: tint,
                 tex_rect_pos,
                 tex_rect_size,
-                color: tint,
                 transform: Affine2::from_translation(pos),
             });
         }
@@ -258,35 +319,32 @@ impl Render {
 
     fn draw_circle_fill(
         &self,
-        resources: &Resources,
         rect: UiRect,
         progress: f32,
         view_projection: Mat4,
         grad_texture: &Texture2D,
-    ) {
+    ) -> Result<()> {
         let scale = grad_texture.size().as_vec2() / 2.0;
         let model = Mat4::from_scale_rotation_translation(
             scale.extend(1.0),
             Quat::IDENTITY,
             (rect.left_top + rect.size / 2.0).extend(0.0),
         );
-        resources.gl_ctx.draw(DrawCall {
-            pipeline: &self.circle_fill_pipeline,
-            base_element: 0,
-            num_elements: 6,
-            vertex_buffer: &self.quad_verts,
-            index_buffer: &self.gamescreen_indicies,
-            images: &grad_texture,
-            uniforms: &SpinnerPipelineUniforms {
-                view_projection: view_projection * model,
-                progress,
-            },
-        });
+
+        self.circle_fill_pipeline.draw(
+            0,
+            6,
+            &self.quad_verts,
+            &self.gamescreen_indicies,
+            &util::BasicTexImages { tex: &grad_texture },
+            &SpinnerUniforms { view_projection: view_projection * model, progress },
+        )
     }
 
     pub fn buffer_sprites(&mut self, world: &mut World) {
         const FLICKER_INTERVAL: f32 = 0.1;
 
+        self.sprite_batcher.clear();
         for (_, (tf, sprite, hp)) in world.query_mut::<(&Transform, &Sprite, Option<&Hp>)>() {
             let pos = tf.pos + sprite.local_offset;
             let transform = Affine2::from_angle_translation(tf.angle, pos);
@@ -301,10 +359,10 @@ impl Render {
             }
 
             self.curr_texture = sprite.texture;
-            self.sprite_batcher.add_sprite(mimiq::util::Sprite {
+            self.sprite_batcher.add_sprite(RenderSprite {
+                color,
                 tex_rect_pos: sprite.tex_rect_pos,
                 tex_rect_size: sprite.tex_rect_size,
-                color,
                 transform,
             });
         }
@@ -322,75 +380,22 @@ impl Render {
 // }
 
 #[repr(C)]
-#[derive(Debug, Default, Pod, Zeroable, Clone, Copy)]
+#[derive(Debug, Default, Pod, Zeroable, Clone, Copy, UniformBlock)]
 pub struct PixelPerfectUniforms {
     pub res: Vec2,
     pub view_projection: Mat4,
 }
 
-impl UniformBlock for PixelPerfectUniforms {
-    const FIELDS: &'static [UniformField] = &[
-        uniform_of!(PixelPerfectUniforms, res),
-        uniform_of!(PixelPerfectUniforms, view_projection),
-    ];
-}
-
 #[repr(C)]
-#[derive(Debug, Default, Pod, Zeroable, Clone, Copy)]
+#[derive(Debug, Default, Pod, Zeroable, Clone, Copy, Vertex)]
 pub struct QuadVert {
     pub pos: Vec2,
     pub uv: Vec2,
 }
 
-impl Vertex for QuadVert {
-    const LAYOUT: &'static [VertexField] =
-        &[attribute_of!(QuadVert, pos), attribute_of!(QuadVert, uv)];
-}
-
-pub struct PixelPerfectPipelineMeta;
-
-impl PipelineMeta for PixelPerfectPipelineMeta {
-    const VERTEX_SHADER: &str = include_str!("shaders/pixel_perfect.vert");
-    const FRAGMENT_SHADER: &str = include_str!("shaders/pixel_perfect.frag");
-
-    const IMAGES_NAMES: &str = "tex";
-    type Images = Texture2D;
-    type Vertex = QuadVert;
-    type Uniforms = PixelPerfectUniforms;
-    const PARAMS: PipelineParams = default_pipeline_params();
-}
-
-pub struct SpinnerPipelineMeta;
-
-impl PipelineMeta for SpinnerPipelineMeta {
-    const VERTEX_SHADER: &str = include_str!("shaders/spinn.vert");
-    const FRAGMENT_SHADER: &str = include_str!("shaders/spinn.frag");
-
-    type Images = Texture2D;
-    const IMAGES_NAMES: &str = "tex";
-
-    type Vertex = QuadVert;
-    type Uniforms = SpinnerPipelineUniforms;
-    const PARAMS: PipelineParams = mimiq::PipelineParams {
-        blending: mimiq::Blending::All(mimiq::BlendFunc {
-            equation: mimiq::BlendEquation::Add,
-            source: mimiq::BlendFactor::Value(mimiq::BlendValue::SrcAlpha),
-            dest: mimiq::BlendFactor::OneMinusValue(mimiq::BlendValue::SrcAlpha),
-        }),
-        ..default_pipeline_params()
-    };
-}
-
 #[repr(C)]
-#[derive(Debug, Pod, Zeroable, Clone, Copy)]
-pub struct SpinnerPipelineUniforms {
+#[derive(Debug, Pod, Zeroable, Clone, Copy, UniformBlock)]
+pub struct SpinnerUniforms {
     pub view_projection: Mat4,
     pub progress: f32,
-}
-
-impl UniformBlock for SpinnerPipelineUniforms {
-    const FIELDS: &[UniformField] = &[
-        uniform_of!(SpinnerPipelineUniforms, view_projection),
-        uniform_of!(SpinnerPipelineUniforms, progress),
-    ];
 }

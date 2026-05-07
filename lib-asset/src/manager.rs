@@ -69,7 +69,8 @@ impl<T: 'static> AssetManager<T> {
     pub fn load_prefab(
         &mut self,
         src: impl AsRef<Path>,
-        callback: impl FnOnce(&mut T, &FsResolver, BuiltEntityClone, &Path) + 'static,
+        callback: impl FnOnce(&mut T, &FsResolver, BuiltEntityClone, &Path) -> anyhow::Result<()>
+        + 'static,
     ) {
         let factory_deps = self.prefab_factory.clone();
         let factory_finish = self.prefab_factory.clone();
@@ -89,8 +90,7 @@ impl<T: 'static> AssetManager<T> {
                 factory_finish
                     .build(ctx, &mut builder, &pre_prefab)
                     .context("build prefab")?;
-                callback(ctx, res, builder.build(), &path_borrow);
-                Ok(())
+                callback(ctx, res, builder.build(), &path_borrow).context("init")
             }),
         );
         self.create_asset_task(node);
@@ -99,7 +99,8 @@ impl<T: 'static> AssetManager<T> {
     pub fn load_image(
         &mut self,
         src: impl AsRef<Path>,
-        callback: impl FnOnce(&mut T, &FsResolver, image::DynamicImage, &Path) + 'static,
+        callback: impl FnOnce(&mut T, &FsResolver, image::DynamicImage, &Path) -> anyhow::Result<()>
+        + 'static,
     ) {
         let path: Rc<Path> = src.as_ref().into();
         let path_borrow = path.clone();
@@ -110,8 +111,7 @@ impl<T: 'static> AssetManager<T> {
             Box::new(|_| Ok(HashSet::new())),
             Box::new(move |ctx, res, data| {
                 let img = image::load_from_memory(&data).context("decode img")?;
-                callback(ctx, res, img, &path_borrow);
-                Ok(())
+                callback(ctx, res, img, &path_borrow).context("init")
             }),
         );
         self.create_asset_task(node);
