@@ -9,7 +9,7 @@ RUN <<EOF
         libwayland-dev \
         libxkbcommon-dev
     rustup target add wasm32-unknown-unknown
-    cargo install -f wasm-bindgen-cli --version 0.2.114
+    cargo install -f wasm-bindgen-cli --version 0.2.120
 EOF
 ADD . /project/
 # Put all statis files
